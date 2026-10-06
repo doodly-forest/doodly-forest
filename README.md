@@ -1,36 +1,223 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 오늘의 작은 동화
 
-## Getting Started
+공룡·바다 친구 60가지 중 1~2명, 주제, 목표 길이를 고르면 한국어 동화를 만듭니다. **친구 고르기** 모달에서 전체·초식·육식·바다 탭과 이름 검색으로 친구를 찾고, 공개 복원도가 있는 카드를 눌러 선택합니다. 보호자가 본문을 확인한 뒤 **읽어주기**를 누르면 음성을 생성합니다. 개발자·보호자가 직접 실행하는 로컬 웹 프로토타입입니다.
 
-First, run the development server:
+## 준비
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Node.js **22.12 이상**(24 LTS 사용 권장), npm. 구현 검증 환경: Node 24.14.1 / npm 11.11.0.
+- 기본 공급자는 **Gemini**입니다. 실제 동화·내용 검사·음성 생성에는 인터넷 연결과 **Gemini API 키 1개**가 필요합니다. OpenAI 키는 필요하지 않습니다.
+- 임시 무료 테스트는 Google AI Studio의 **Free Tier 프로젝트**를 사용하세요. 무료 제공 모델이라도 프로젝트별 한도와 접근 권한이 적용됩니다.
+- 키 없이도 첫 화면, 선택 기능, 빌드, 모의 테스트가 동작합니다. 생성 요청에는 설정 오류가 표시되며 샘플 결과로 대체하지 않습니다.
+
+```sh
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+lockfile과 동일한 의존성을 설치하려면 `npm ci`를 사용할 수 있습니다. 기존 Next.js 16.3.8, React 19.2.8, Tailwind CSS 4를 유지했습니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 환경파일
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+프로젝트 루트에서 예제를 복사합니다. 기존 `.env.local`이 있다면 덮어쓰지 말고 필요한 항목을 추가하세요.
 
-## Learn More
+macOS / Linux:
 
-To learn more about Next.js, take a look at the following resources:
+```sh
+cp .env.example .env.local
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Windows PowerShell:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```powershell
+Copy-Item .env.example .env.local
+```
 
-## Deploy on Vercel
+[Google AI Studio](https://aistudio.google.com/apikey)에서 Free Tier 프로젝트의 키를 발급받아 `.env.local`의 `GEMINI_API_KEY`에 입력합니다. 최소 설정은 다음 두 줄입니다.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```dotenv
+AI_PROVIDER=gemini
+GEMINI_API_KEY=발급받은_키
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+브라우저 입력창이나 `NEXT_PUBLIC_` 환경변수에 키를 넣지 마세요. `.env.local`은 Git에서 제외됩니다. 기존 OpenAI 설정은 남겨두어도 Gemini 모드에서는 사용하지 않습니다.
+
+| 환경변수 | 기본값 / 설정 |
+| --- | --- |
+| `AI_PROVIDER` | `gemini` — `gemini` 또는 `openai`만 허용 |
+| `GEMINI_API_KEY` | Gemini 모드 필수: 본인의 API 키 |
+| `GEMINI_TEXT_MODEL` | `gemini-3.1-flash-lite` |
+| `GEMINI_CONTENT_CHECK_MODEL` | `gemini-3.1-flash-lite` |
+| `GEMINI_TTS_MODEL` | `gemini-3.8-flash-lite-tts` |
+| `GEMINI_TTS_VOICE` | `Kore` |
+| `OPENAI_API_KEY` | OpenAI 모드에서만 필수 |
+| `OPENAI_TEXT_MODEL` | OpenAI 모드: `gpt-4.1-mini` |
+| `OPENAI_TTS_MODEL` | OpenAI 모드: `gpt-4o-mini-tts` |
+| `OPENAI_TTS_VOICE` | OpenAI 모드: `coral` |
+| `OPENAI_MODERATION_MODEL` | OpenAI 모드: `omni-moderation-latest` |
+
+모델·목소리 변수는 생략하면 위 기본값을 사용합니다. 명시적으로 빈 값이면 설정 오류입니다. 변경 후 서버를 다시 시작하세요. 키·무료 한도·모델 문제가 있어도 다른 공급자나 모델로 자동 전환하지 않습니다. `GOOGLE_API_KEY` 등의 다른 환경변수를 키 대신 자동 사용하지 않습니다.
+
+기존 OpenAI 연결로 돌아가려면 `AI_PROVIDER=openai`와 `OPENAI_API_KEY`를 설정하고 서버를 재시작하세요. 동화·내용 검사·음성이 모두 선택한 공급자를 사용합니다.
+
+Gemini 텍스트·내용 검사 모델은 JSON schema와 `thinkingLevel: MINIMAL`을 지원해야 합니다. 음성 어댑터는 Gemini 3.8 Flash-Lite TTS에 본문과 낭독 스타일을 별도 필드로 전달하고 24 kHz·16비트·모노 PCM을 요청합니다. 받은 PCM을 검증한 뒤 WAV로 감싸 반환합니다. 다른 모델의 요청·출력 형식이 다르면 코드도 조정해야 합니다. OpenAI 텍스트 모델은 Responses strict JSON schema, 음성 모델은 음성 지침과 MP3를 지원해야 합니다.
+
+### 무료 테스트 한도
+
+2026-10-03 확인한 [공식 요금표](https://ai.google.dev/gemini-api/docs/pricing)에서 기본 텍스트·TTS 모델은 무료 등급을 지원합니다. **결제 계정을 연결하지 않은 Free Tier 프로젝트**의 키를 사용하세요. Paid Tier 키를 사용하면 이 앱에서도 사용료가 발생할 수 있으며, 앱은 계정의 결제 등급을 판별하거나 변경하지 않습니다.
+
+- 동화 만들기: 동화 생성 1회 + 별도 내용 검사 1회, 총 텍스트 모델 요청 2회.
+- 읽어주기: 내용 재검사 1회 + TTS 1회. 동화 한 편과 음성을 모두 만들면 텍스트 요청 3회 + 음성 요청 1회입니다.
+- 다시 듣기·구간 이동: 추가 API 요청 0회.
+- 한도는 모델·프로젝트별로 다르며 [AI Studio에서 현재 한도](https://ai.google.dev/gemini-api/docs/rate-limits)를 확인해야 합니다. HTTP 429라면 분당/하루 한도 초기화까지 기다리세요. 한도가 0이면 해당 모델의 Free Tier 접근 가능 여부를 먼저 확인하세요.
+- 무료 등급의 입력·출력은 Google의 제품 개선에 사용될 수 있습니다. 앱에서는 아이의 개인정보를 받지 않으며, API에는 고정 선택 조건과 생성된 이야기만 보냅니다.
+
+## 로컬 실행
+
+```sh
+npm run dev
+```
+
+[http://127.0.0.1:3000](http://127.0.0.1:3000)에 접속합니다. 기본 바인딩은 `127.0.0.1`이며 공개 배포나 터널을 열지 않습니다.
+
+1. **친구 고르기**를 눌러 모달을 열고 탭·이름 검색으로 친구를 찾은 뒤 카드 전체를 눌러 1~2명 고릅니다. 선택된 카드에는 초록색 테두리가 생기며, 다시 누르면 해제됩니다. 첫 번째가 주인공입니다. **선택 완료**를 누르면 본 화면에 반영됩니다. **친구 바꾸기**로 다시 열 수 있으며, 취소·닫기·Esc·배경 클릭은 변경 중인 선택을 버리고 이전 선택을 유지합니다.
+2. 주제와 약 1분·약 2분 중 목표 길이를 고른 뒤 **동화 만들기**를 누릅니다. 동화 화면(`/story`)으로 이동해 생성 상태와 결과를 보여줍니다.
+3. 동화 화면에서 보호자가 제목과 본문을 먼저 읽습니다. **읽어주기**를 누를 때만 음성 API를 호출합니다.
+4. 오디오 기본 컨트롤로 재생·일시정지·구간 이동을 할 수 있습니다. **처음부터 다시 듣기**는 이미 받은 음성을 재사용합니다.
+5. **같은 조건으로 새 동화 만들기**는 현재 동화 화면에서 새로 생성합니다. **선택 바꾸기**는 고른 조건을 유지한 채 선택 화면(`/`)으로 돌아갑니다. **처음으로**는 진행 중 요청을 취소하고 모든 선택과 결과를 초기화한 뒤 선택 화면으로 돌아갑니다.
+
+조건 변경·새 동화 생성·초기화·동화 화면 이탈 시 이전 음성을 정지하고 Blob URL을 해제합니다. 브라우저 뒤로가기도 진행 중 요청을 취소하며, 선택값만 유지합니다. 새로고침하면 선택과 결과를 복원하지 않습니다. 결과 없이 `/story`에 직접 접속하거나 앞으로가기로 돌아오면 API를 호출하지 않고 선택 화면으로 이동합니다. 약 1분·약 2분은 목표이며, **실제 길이**는 오디오 메타데이터를 얻은 뒤에만 표시합니다.
+
+### 공룡·바다 친구 목록
+
+자동차와 세계 선택은 제외했습니다. API도 `world: "dinosaur"`만 허용하며 이전 자동차 ID는 거절합니다. 시대를 고르는 대신 쥐라기·백악기 등 여러 시대의 동물을 함께 만나는 상상 동화로 구성합니다. 아래 60가지는 공룡 54가지와 해양 파충류 6가지를 합친 선택지의 수이며, 학술적인 전체 공룡 종수를 뜻하지 않습니다. 이름은 주로 속명 기준입니다.
+
+| 탭 | 선택 가능한 친구 |
+| --- | --- |
+| 초식 · 30가지 | 스테고사우루스, 트리케라톱스, 브라키오사우루스, 안킬로사우루스, 디플로도쿠스, 아파토사우루스, 파라사우롤로푸스, 이구아노돈, 브론토사우루스, 아르헨티노사우루스, 카마라사우루스, 마멘치사우루스, 살타사우루스, 슈노사우루스, 켄트로사우루스, 후아양고사우루스, 유오플로케팔루스, 노도사우루스, 폴라칸투스, 파키케팔로사우루스, 드리오사우루스, 스티라코사우루스, 센트로사우루스, 프로토케라톱스, 프시타코사우루스, 에드몬토사우루스, 코리토사우루스, 람베오사우루스, 마이아사우라, 오우라노사우루스 |
+| 육식 · 24가지 | 티라노사우루스, 알로사우루스, 벨로키랍토르, 스피노사우루스, 카르노타우루스, 딜로포사우루스, 케라토사우루스, 기가노토사우루스, 카르카로돈토사우루스, 아크로칸토사우루스, 알베르토사우루스, 타르보사우루스, 다스플레토사우루스, 고르고사우루스, 바리오닉스, 수코미무스, 데이노니쿠스, 유타랍토르, 미크로랍토르, 콤프소그나투스, 코엘로피시스, 헤레라사우루스, 메갈로사우루스, 마푸사우루스 |
+| 바다 · 6가지 | 모사사우루스, 플레시오사우루스, 이크티오사우루스, 엘라스모사우루스, 리오플레우로돈, 틸로사우루스 |
+
+초식·육식은 육지 공룡의 먹이 분류이고, 바다는 해양 파충류를 모은 탐색 분류입니다. 바다 친구는 공룡과 다른 동물이라는 설명을 해당 탭에 표시합니다. 카탈로그의 별명과 성격은 동화용 창작 설정입니다. 프롬프트에는 해양 파충류가 물속에서 활동하고, 서로 다른 시대의 동물을 실제 동시대 동물이라고 설명하지 않으며, 육식 친구도 사냥 장면 없이 다정하게 등장하도록 지시했습니다.
+
+한글 이름·별명·영문 속명으로 검색할 수 있습니다. 검색은 현재 탭 안에서 이루어지며, 결과가 없으면 **전체에서 찾기**로 분류를 넓힐 수 있습니다. 검색어와 탭을 바꿔도 선택은 유지되며 모든 탭을 합쳐 최대 2명입니다. 하단 선택 목록에서 다른 탭의 친구도 해제할 수 있습니다. 키보드에서는 Tab으로 모달 안을 이동하고, 분류 탭에서 좌우 방향키·Home·End로 탭을 바꾸고, 카드에서는 Enter·Space로 선택·해제합니다. 닫으면 열기 버튼으로 포커스가 돌아옵니다. 모달을 탐색·확정하는 것만으로는 API를 호출하지 않습니다.
+
+### 공개 복원도와 출처
+
+60개 카드 모두에 종별 공개 복원도를 넣었습니다. 이미지에 필요한 API 키·사용료는 없습니다. 파일은 `public/dinosaurs/`에 포함되어 앱과 같은 서버에서 제공하므로, 카드를 열 때 Wikimedia나 외부 이미지 API에 접속하지 않습니다. 전체 이미지 용량은 약 3.2 MB이며, 처음 보이는 일부 이미지는 즉시, 나머지는 지연 로딩합니다. 전체 모습이 잘리지 않도록 맞추고, 로딩 실패 시에도 이름으로 선택할 수 있습니다.
+
+모달 하단 **그림 출처·이용 조건**은 `/image-credits`를 새 탭에서 열어 현재 선택을 유지합니다. 각 그림의 작가, 파일명, 원본 링크, CC 라이선스/퍼블릭 도메인 표시, 변경 내역과 확인일을 제공합니다. 무료 공개 자료도 조건은 그림마다 다르므로 [Wikimedia 재사용 안내](https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia)와 각 파일의 라이선스를 확인하세요. 복원도는 추정한 모습이며, 서로 다른 그림의 색·크기가 확정된 사실이나 같은 축척을 뜻하지 않습니다.
+
+개발자가 그림을 교체할 때만 다음 파일을 사용합니다. 일반 실행에서는 가져오기 스크립트를 실행할 필요가 없습니다.
+
+- `scripts/dinosaur-image-selection.json`: 검토해 고른 Commons 원본 파일명 60개.
+- `src/lib/dinosaur-images.json`: 원본·작가·라이선스·축소본 URL·크기·SHA-256 기록. 이미지의 이용 조건은 앱 코드와 별개로 유지합니다.
+- `scripts/import-dinosaur-images.py`: Python 3 표준 라이브러리만 사용하는 개발용 도구. `--discover`는 후보를 `/tmp/doodly-dinosaur-candidates.json`에 기록합니다. 후보를 직접 검토해 선택 파일에 반영한 뒤 `--download`로 내려받습니다. 기존 파일의 체크섬이 같으면 재사용하며 중단 후 재실행할 수 있습니다. 사냥 장면·다른 동물·골격·출처 불명 자료가 검색될 수 있으므로 검색 결과를 자동 확정하지 않습니다.
+
+백과사전의 수록 수는 책과 대상 연령에 따라 다릅니다. 예를 들어 [DK 어린이 도감](https://dk.com/en-us/products/9780744054750-dinosaurs-and-other-prehistoric-life)은 선사시대 생물 90종 이상, [DK 종합 도감](https://dk.com/products/9780241641521-dinosaurs-and-prehistoric-life)은 동식물·균류·미생물을 포함한 500종 이상을 소개합니다. 둘 다 공룡만의 종수는 아닙니다.
+
+프로덕션 모드를 로컬에서 확인하려면:
+
+```sh
+npm run build
+npm run start
+```
+
+## 오류와 재시도
+
+- 키·모델·목소리 설정 문제: `.env.local`의 `AI_PROVIDER`, 선택 공급자의 키, 모델 접근 권한을 확인하고 서버를 재시작합니다.
+- Gemini 무료 한도 문제(`API_RATE_LIMITED`): AI Studio의 해당 모델 한도와 초기화 시점을 확인합니다. 자동 결제 전환이나 자동 재시도는 없습니다. OpenAI의 잔액 부족은 `API_QUOTA_EXCEEDED`로 구분합니다.
+- 일시적인 연결·요청량·타임아웃 오류: 잠시 뒤 해당 단계의 재시도 버튼을 사용합니다. 자동 유료 재시도는 없습니다.
+- 내용 차단: 결과를 제공하지 않습니다. 다른 동화를 만들어주세요.
+- 내용 검사 실패: 검사를 생략하지 않습니다. 잠시 뒤 다시 시도합니다.
+- 음성 생성 실패: 본문은 유지됩니다. **음성 다시 준비하기**는 음성 경로만 다시 호출합니다.
+- 브라우저 재생 차단: 준비된 음성을 유지합니다. 플레이어의 재생 버튼을 직접 누릅니다. 추가 합성 요청은 하지 않습니다.
+
+오류 안내의 **오류 확인 정보**에 요청 번호와 오류 코드가 있습니다. 서버 로그에는 요청 번호·단계·소요 시간·오류 코드와 고정된 진단 코드(`reason`)만 기록하며 키, 동화 본문, 음성, 외부 서비스 원본 오류를 출력하지 않습니다.
+
+### `CONTENT_CHECK_UNAVAILABLE` 진단
+
+`stage: "moderation"`은 내용을 검사하던 중 실패했다는 뜻입니다. 동화 요청에서는 생성된 본문의 형식·길이·인물 이름 검사를 통과한 뒤 이 단계에 들어갑니다. 유해하다는 판정은 `CONTENT_BLOCKED`로 별도 처리합니다. 이 앱이 반환한 HTTP 503만으로 Gemini가 503을 보냈다고 판단할 수는 없습니다.
+
+기존 로그는 여러 원인을 하나의 코드로 묶어 세부 원인을 복원할 수 없습니다. 변경 후 다시 시도해 실패하면 터미널 로그의 `reason`으로 다음을 구분합니다. 키·본문·외부 오류 원문을 로그에 남기지 않으며, 브라우저에는 기존의 안전한 오류 안내를 유지합니다.
+
+| `reason` | 의미 |
+| --- | --- |
+| `RESPONSE_MAX_TOKENS` | Gemini가 출력 토큰 한도에 도달해 검사 응답을 끝내지 못함 |
+| `RESPONSE_INCOMPLETE` | 응답의 종료 상태가 정상 완료가 아님 |
+| `RESPONSE_MISSING_CANDIDATE` / `RESPONSE_INVALID_PARTS` | 정상 판정에 필요한 응답 후보·텍스트가 없거나 구조가 다름 |
+| `RESPONSE_INVALID_JSON` | 판정 텍스트를 JSON으로 읽을 수 없음 |
+| `CONTENT_VERDICT_INVALID` | Gemini의 `{ "safe": true/false }` 등 공급자별 판정 형식을 만족하지 않음 |
+| `CONTENT_CHECK_UPSTREAM_FAILURE` | 검사 API 연결·외부 서비스 처리 실패 |
+| `CONTENT_CHECK_TIMEOUT` | 검사 요청에 시간 초과 오류 발생 |
+
+`elapsedMs`는 마지막 검사 단계만의 시간이 아니라 요청 전체의 경과 시간입니다. 현재 Gemini 검사 응답의 출력 한도는 512토큰, 검사 시간 제한은 15초입니다. 세부 원인 확인 전에는 이를 임의로 늘리거나 내용 검사를 생략하지 않습니다. 자동 재시도도 추가하지 않았습니다.
+
+## 테스트
+
+모든 자동화 테스트는 외부 AI·TTS 호출을 모킹합니다. 테스트용 본문·무음 MP3·PCM/WAV는 테스트 파일에서만 사용합니다. 정상 실행에는 모의 응답 모드가 없습니다.
+
+```sh
+npm run typecheck
+npm run lint
+npm run test
+npx playwright install chromium
+npm run test:e2e
+npm run build
+```
+
+- Vitest / Testing Library: 실제 Google GenAI·OpenAI SDK의 HTTP 전송을 모킹하여 API 계약, 입력·출력 검증, 내용 차단·검사 실패, WAV 변환, 한도·설정 오류, 취소, 타임아웃, 화면 상태, Blob 수명, 60개 선택지의 서버 입력 허용과 이미지 파일·출처·라이선스·체크섬 대응을 검사합니다.
+- Playwright: Chromium 데스크톱과 360×800 화면에서 주요 흐름을 검사합니다. 테스트 전용 서버를 `127.0.0.1:3100`에 자동 실행하고 종료합니다. `STORY_E2E=1`로 `.next-e2e/` 빌드 폴더를 사용하므로 기존 `.next/` 개발 서버와 분리됩니다. 다른 서버가 3100 포트를 사용하고 있으면 테스트 설정의 포트를 바꾸세요.
+- E2E 서버는 `AI_PROVIDER=gemini`와 함께 `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `OPENAI_API_KEY`를 빈 값으로 강제합니다. 기존 `.env.local`이 있어도 실제 외부 API를 호출하지 않습니다. 브라우저 API 요청은 테스트에서 모킹하며, 키 없음·Origin 거절은 실제 로컬 Route Handler도 검증합니다. WAV와 MP3의 실제 브라우저 디코딩·재생·재사용을 각각 검사합니다. 60개 로컬 이미지의 디코딩·출처 링크·이미지 실패 시 선택 동작과 카드 테두리·검색 유지도 확인합니다.
+- `test-results/`에 테스트 화면 캡처와 실패 시 trace가 생성됩니다. 이는 개발 검증 산출물이며 앱의 이야기 저장 기능이 아닙니다. Git에서 제외됩니다.
+- 제한된 실행 환경에서는 서버 포트와 Chromium 실행 권한이 필요합니다. Turbopack의 PostCSS 작업도 내부 포트를 사용하므로 권한이 필요할 수 있습니다. 최초 권한 실패 후 빌드 캐시에 오류가 남으면 서버를 멈추고 생성 산출물 `.next`를 정리한 뒤 다시 실행합니다.
+
+실행 결과와 미검증 항목은 [IMPLEMENTATION_REPORT.md](./IMPLEMENTATION_REPORT.md)를 보세요. 모의 테스트 통과는 실제 Gemini·OpenAI 호출 성공이나 한국어 음성 청취를 의미하지 않습니다.
+
+## 실제 API 수동 확인
+
+이 과정은 사용자가 키를 설정하고 직접 실행하는 별도 검증입니다. Gemini Free Tier에서는 무료 한도를 사용하며, 유료 프로젝트·공급자를 선택하면 비용이 발생할 수 있습니다. 자동으로 실행하지 않습니다.
+
+| 선택 예시 | 직접 확인할 내용 |
+| --- | --- |
+| 스테고 + 모사 / 우정 / 약 2분 | 두 인물의 해결 참여, 물가 설정 |
+| 티노 / 가족 / 약 1분 | 무섭지 않은 묘사, 다양한 돌봄 관계 |
+| 알로 + 엘라 / 배려 / 약 1분 | 육지·물가에서 협력, 바다 파충류의 서식 표현 |
+| 디플로 / 용기 / 약 2분 | 도움 요청과 작은 시도 |
+| 안키 + 트리 / 생활습관 / 약 1분 | 훈계보다 행동으로 표현한 정리 |
+
+각 결과에서 문장의 자연스러움, 이름 발음, 음량 안정성, 목표와 실제 길이 차이를 확인하세요. 브라우저 개발자 도구의 Network에서 동화 생성 직후 음성 요청이 없는지, 다시 듣기·구간 이동 때 새 `/api/speech` 요청이 없는지도 확인할 수 있습니다.
+
+## 구현 구조와 제한
+
+기존 `app/` 경로를 보존했습니다. 카탈로그는 `src/lib/story-options.ts`, 분량·타임아웃은 `src/lib/story-config.ts`, 동화 프롬프트는 `src/lib/server/story-prompt.ts`에서 조절합니다. 공급자 선택은 `provider-config.ts`, Gemini 연결·검사는 `gemini-client.ts`와 `gemini-generation.ts`, WAV 변환은 `pcm-audio.ts`에 있습니다. 서버 전용 모듈은 `server-only`로 클라이언트 import를 차단합니다.
+
+`src/components/character-picker.tsx`는 네이티브 `<dialog>`로 선택 초안·분류 탭·확정과 취소를 관리합니다. `story-form.tsx`는 확정된 친구와 주제·길이를 표시합니다. 선택 초안은 모달 컴포넌트의 메모리에만 존재하고 닫으면 폐기됩니다.
+
+동화 프롬프트는 서술 사이에 선택한 인물마다 짧은 직접 대사를 포함하도록 요청합니다. 두 명을 선택하면 서로 반응하는 대화를 넣고, 큰따옴표와 주변 서술로 말하는 인물을 구분합니다. 대사도 기존 문단·분량 제한 안에 포함됩니다. 이 지침은 Gemini와 OpenAI가 함께 사용하며, 실제 대사 포함 여부와 자연스러움은 생성 결과로 확인해야 합니다.
+
+페이지는 선택 화면 `/`, 동화 화면 `/story`, 그림 출처 `/image-credits`이며 API는 `POST /api/story`, `POST /api/speech` 두 개입니다. 선택·동화 페이지의 React Context를 공통 layout에 두어 화면을 이동할 때 선택값을 유지합니다. 요청에 따라 정적 공룡 이미지를 추가했습니다. DB, 로그인, AI 이미지 생성, 동화·음성 파일 저장, 다운로드, 앱, 배포 기능은 없습니다. 선택·현재 동화 한 편·음성 하나는 브라우저 메모리에만 둡니다. URL에도 선택값·본문을 넣지 않으며, localStorage, sessionStorage, IndexedDB, 쿠키에 기록하지 않습니다.
+
+제목 60자, 본문 3~8문단, 전체 낭독문 1,800자, 요청 본문 16 KiB 제한을 서버에서 검증합니다. 1분의 250~400자, 2분의 500~750자는 검증 전 분량 가설입니다. 목표를 벗어났다는 이유로 자동 재생성·재합성하지 않습니다. 입력 상한을 바꾸거나 모델을 교체할 때 공급자의 입력 제한도 확인해야 합니다.
+
+텍스트 60초, 내용 검사 15초, 음성 90초의 개별 제한을 둡니다. 서버 전체는 동화 90초·음성 120초, 클라이언트는 각각 105초·135초입니다. SDK 자동 재시도는 꺼져 있습니다. 요청 잠금은 현재 화면에만 적용되며 여러 탭·프로세스의 비용을 제한하는 기능은 아닙니다.
+
+Gemini 모드에서는 안전 필터와 별도의 구조화된 내용 판정(`safe: true`)을 모두 거칩니다. 음성 API에 직접 입력된 본문도 같은 검사를 받으며, 검사 실패·불완전 응답·차단 시에는 결과를 제공하지 않습니다. 이는 OpenAI Moderation API와 동일한 검사가 아니며, 의미상 판정 성능은 실제 결과로 검증해야 합니다. 두 공급자 모두 검사 통과와 이름 포함만으로 유아 적합성·실제 인물 역할·주제 반영을 보증할 수 없어 보호자가 내용을 먼저 확인해야 합니다.
+
+실제 AI·TTS는 선택한 외부 공급자를 사용합니다. Gemini는 상태를 생성하는 Interactions 대신 `generateContent`를 사용하며 파일 업로드·캐시 저장을 요청하지 않습니다. OpenAI Responses는 `store: false`를 유지합니다. 앱의 영구 저장 없음이나 `no-store`가 외부 제공자의 모든 로그·보관 정책까지 통제하지는 않습니다. 요청 취소도 외부 작업 중단이나 과금 취소를 보장하지 않습니다. 공개 서비스용 접근 제어·요청량 및 비용 방어·아동 대상 정책 검토는 이번 범위 밖입니다.
+
+## 구현 근거
+
+기능·작업 기준 원문은 [.codex/story-prototype-spec.md](./.codex/story-prototype-spec.md), [.codex/codex-task.md](./.codex/codex-task.md)에 있으며 수정하지 않았습니다. 후속 요청에 따라 두 페이지 구성, Gemini 기본 공급자, 대사 지침, 자동차 제외, 60가지 친구의 카드 선택·검색·공개 복원도와 출처 페이지를 적용했습니다. Next.js 지침은 설치된 `node_modules/next/dist/docs/`를 확인했습니다. 공식 문서와 설치한 Google GenAI SDK 2.27.0·OpenAI SDK 7.27.0의 타입을 기준으로 연결했습니다.
+
+- [자연사박물관 공룡 설명](https://www.nhm.ac.uk/discover/what-are-dinosaurs.html): 해양 파충류와 공룡의 구분 및 300종 이상의 공룡 소개 안내. 이 소개 수는 쥐라기에 한정한 전체 종수가 아닙니다.
+- [초식 공룡 목록](https://www.nhm.ac.uk/discover/dino-directory/diet/herbivores/gallery.html), [육식 공룡 목록](https://www.nhm.ac.uk/discover/dino-directory/diet/carnivores/gallery.html): 탐색용 먹이 분류.
+- [모사사우루스](https://www.nhm.ac.uk/discover/what-is-a-mosasaur.html), [수장룡](https://www.nhm.ac.uk/discover/what-is-a-plesiosaur.html), [쥐라기 바다 파충류](https://www.nhm.ac.uk/discover/meet-the-monsters-of-the-jurassic-seas.html): 바다 친구의 분류 근거.
+
+- [Gemini 구조화 출력](https://ai.google.dev/gemini-api/docs/generate-content/structured-output): JSON schema 응답과 서버 검증.
+- [Gemini TTS](https://ai.google.dev/gemini-api/docs/generate-content/speech-generation): 본문·스타일 분리와 음성 출력 형식.
+- [Gemini 안전 설정](https://ai.google.dev/gemini-api/docs/safety-settings): 안전 임계값과 차단 피드백.
+- [Gemini 3.1 Flash-Lite](https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite), [Gemini 3.8 Flash-Lite TTS](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash-lite-tts): 모델과 기능.
+
+- [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs): Responses strict JSON schema와 거절·불완전 응답 처리.
+- [GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini): 문서 지정 텍스트 모델 식별자.
+- [Text to speech](https://developers.openai.com/api/docs/guides/text-to-speech): Speech API, MP3, 음성 지침과 AI 음성 고지.
+- [Moderation](https://developers.openai.com/api/docs/guides/moderation): 최종 텍스트의 `flagged` 검사.
