@@ -109,7 +109,7 @@ it("T01–T04: dinosaur-only defaults, category tabs, ordered roles and cross-ta
   expect(screen.getByRole("radio", { name: "약 2분" })).toBeChecked();
   expect(fetchMock).not.toHaveBeenCalled();
 });
-it.each(["취소", "친구 선택 닫기", "Escape"])("dismiss via %s discards the draft and reopens with committed choices", async (action) => {
+it.each(["친구 선택 닫기", "Escape"])("dismiss via %s discards the draft and reopens with committed choices", async (action) => {
   const user = userEvent.setup(); render(<TestApp />);
   await chooseFriends(user);
   await user.click(screen.getByRole("button", { name: "친구 바꾸기" }));

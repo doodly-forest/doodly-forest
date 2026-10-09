@@ -32,9 +32,12 @@ legend { display: flex; align-items: center; margin-bottom: 1rem; font-size: 1.1
 .story-body { font-size: 1.125rem; line-height: 2; overflow-wrap: anywhere; }
 .story-body p + p { margin-top: 1.4rem; }
 .error { background: #fff4ee; border: 1px solid #e9c7b1; border-radius: .8rem; padding: 1rem; color: #813d21; overflow-wrap: anywhere; }
-.character-dialog { width: min(46rem, calc(100% - 1.5rem)); max-width: none; max-height: 90dvh; margin: auto; padding: 0; border: 1px solid #d6ddd2; border-radius: 1.25rem; background: #fffef9; color: var(--foreground); overflow: hidden; box-shadow: 0 24px 80px #16302240; }
+.character-dialog { width: min(46rem, calc(100% - 1.5rem)); max-width: none; height: 90dvh; max-height: 90dvh; margin: auto; padding: 0; border: 1px solid #d6ddd2; border-radius: 1.25rem; background: #fffef9; color: var(--foreground); overflow: hidden; box-shadow: 0 24px 80px #16302240; }
 .character-dialog::backdrop { background: #12251bbb; }
+.character-dialog .picker-layout { height: 100%; }
+.character-dialog .picker-panel { flex: 1; scrollbar-gutter: stable; }
 .picker-layout { display: flex; flex-direction: column; max-height: 90dvh; }
+.picker-dismiss { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; width: 2.75rem; min-height: 2.75rem; padding: .4rem; border: none; background: transparent; }
 .picker-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .3rem; padding: .3rem; border-radius: .8rem; background: #edf1e7; }
 .picker-tabs button { min-height: 2.75rem; border-radius: .6rem; font-size: .875rem; font-weight: 600; }
 .picker-tabs button span { font-size: .75rem; }
@@ -54,3 +57,33 @@ legend { display: flex; align-items: center; margin-bottom: 1rem; font-size: 1.1
 .character-description { color: #58655d; font-size: .8rem; line-height: 1.6; }
 .character-role { align-self: flex-start; margin-top: auto; border-radius: .35rem; padding: .25rem .5rem; background: #386448; color: white; font-size: .75rem; font-weight: 600; }
 .selected-chip { min-height: 2.75rem; display: inline-flex; align-items: center; gap: .65rem; padding: .5rem .7rem; border: 1px solid #b9ccb0; border-radius: .65rem; background: white; font-size: .8rem; }
+.character-picker-page { width: 100%; max-width: 46rem; height: 100dvh; margin-inline: auto; background: #fffef9; }
+.character-picker-page .picker-layout { height: 100%; max-height: none; }
+.character-picker-page .picker-panel { flex: 1; }
+
+@media (width < 640px) {
+  .character-dialog { inset: 0; width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-radius: 0; box-shadow: none; }
+  .picker-layout { height: 100%; max-height: none; }
+  .picker-header { padding-top: max(.5rem, env(safe-area-inset-top)); padding-inline: max(1rem, env(safe-area-inset-left)) max(1rem, env(safe-area-inset-right)); }
+  .picker-heading { align-items: center; justify-content: space-between; gap: .65rem; }
+  .picker-heading h1, .picker-heading h2 { margin-top: 0; font-size: 1.1rem; }
+  .picker-count { display: none; }
+  #picker-help { margin-top: .25rem; font-size: .8rem; }
+  .picker-search-row { margin-top: .65rem; }
+  .character-search { font-size: 1rem; }
+  .picker-tabs { margin-top: .65rem; }
+  .picker-panel { flex: 1; padding-block: .8rem; scroll-padding-block: .8rem; }
+  .picker-panel > .helper { margin-bottom: .75rem; font-size: .75rem; }
+  .character-card { position: relative; padding: .6rem; gap: .5rem; }
+  .character-card strong { font-size: .85rem; }
+  .character-card .character-nickname, .character-card:not([aria-pressed="true"]) .character-description { display: none; }
+  .character-role { position: absolute; top: .65rem; right: .65rem; font-size: .65rem; padding: .2rem .35rem; }
+  .picker-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 .75rem; padding: .65rem max(1rem, env(safe-area-inset-right)) max(.65rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); }
+  .picker-summary { grid-column: 1; grid-row: 1; flex-direction: column; align-items: flex-start; gap: .1rem; }
+  .picker-summary a { font-size: .7rem; }
+  .picker-actions { grid-column: 2; grid-row: 1; margin: 0; }
+  .picker-selected { grid-column: 1 / -1; gap: .4rem; margin-top: .4rem; }
+  .picker-selected:empty, .picker-footer .notice:empty { display: none; }
+  .selected-chip { min-height: 2rem; gap: .4rem; padding: .3rem .5rem; font-size: .75rem; }
+  .picker-footer .notice { grid-column: 1 / -1; font-size: .8rem; }
+}

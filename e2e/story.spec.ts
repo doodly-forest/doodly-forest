@@ -17,8 +17,15 @@ async function mockStory(page: Page, count: { story: number; speech: number }) {
     await route.fulfill({ json: storyFixture(route.request().postDataJSON()) });
   });
 }
+function isMobile(page: Page) { return page.viewportSize()!.width < 640; }
+function pickerTrigger(page: Page, name: string | RegExp = /친구 (고르기|바꾸기)/) {
+  return page.getByRole(isMobile(page) ? "link" : "button", { name });
+}
+function pickerSurface(page: Page) {
+  return page.getByRole(isMobile(page) ? "main" : "dialog", { name: "함께할 친구 고르기" });
+}
 async function chooseFriends(page: Page, names = ["스테고사우루스", "모사사우루스"]) {
-  await page.getByRole("button", { name: /친구 (고르기|바꾸기)/ }).click();
+  await pickerTrigger(page).click();
   for (const name of names) await page.getByRole("button", { name, exact: true }).click();
   await page.getByRole("button", { name: "선택 완료" }).click();
 }
@@ -68,14 +75,14 @@ test(`selection → story → ${format} playback → reuse → reset and no pers
 });
 }
 
-test("modal keyboard navigation, cross-tab selection and maximum selection", async ({ page }) => {
+test("responsive picker keyboard navigation, cross-tab selection and maximum selection", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("자동차 마을")).toHaveCount(0);
   await expect(page.getByRole("checkbox")).toHaveCount(0);
   await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "친구 고르기" })).toBeFocused();
+  await expect(pickerTrigger(page, "친구 고르기")).toBeFocused();
   await page.keyboard.press("Enter");
-  const dialog = page.getByRole("dialog", { name: "함께할 친구 고르기" });
+  const dialog = pickerSurface(page);
   await expect(dialog).toBeVisible();
   await expect(page.getByRole("tab", { name: /전체/ })).toBeFocused();
   await page.keyboard.press("ArrowRight");
@@ -102,30 +109,35 @@ test("modal keyboard navigation, cross-tab selection and maximum selection", asy
   await page.screenshot({ path: `test-results/${test.info().project.name}-character-modal.png` });
   await page.getByRole("button", { name: "선택 완료" }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "친구 바꾸기" })).toBeFocused();
+  if (!isMobile(page)) await expect(pickerTrigger(page, "친구 바꾸기")).toBeFocused();
+  else await expect(page).toHaveURL("/");
   await expect(page.getByText("주인공: 모사 / 함께할 친구: 브라키")).toBeVisible();
   await page.getByRole("radio", { name: "약 2분", exact: true }).check();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/${test.info().project.name}-selection.png`, fullPage: true });
 });
 
-test("modal focus stays inside, Escape/cancel discard drafts, and reopen restores choices", async ({ page }) => {
+test("desktop focus trap and shared Escape/cancel draft handling", async ({ page }) => {
   let apiCalls = 0;
   page.on("request", (request) => { if (request.url().includes("/api/")) apiCalls += 1; });
   await page.goto("/");
   await chooseFriends(page, ["스테고사우루스"]);
-  const trigger = page.getByRole("button", { name: "친구 바꾸기" });
+  const trigger = pickerTrigger(page, "친구 바꾸기");
   await trigger.click();
-  const dialog = page.getByRole("dialog");
+  const dialog = pickerSurface(page);
   await page.getByRole("tab", { name: /바다/ }).click();
   await page.getByRole("button", { name: "모사사우루스", exact: true }).click();
   const done = page.getByRole("button", { name: "선택 완료" });
-  await done.focus(); await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "친구 선택 닫기" })).toBeFocused();
-  await page.keyboard.press("Shift+Tab"); await expect(done).toBeFocused();
+  await done.focus();
+  if (!isMobile(page)) {
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "친구 선택 닫기" })).toBeFocused();
+    await page.keyboard.press("Shift+Tab"); await expect(done).toBeFocused();
+  }
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
-  await expect(trigger).toBeFocused();
+  if (!isMobile(page)) await expect(trigger).toBeFocused();
+  else await expect(page).toHaveURL("/");
   await expect(page.getByText("주인공: 스테고", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
   await trigger.click();
@@ -133,7 +145,7 @@ test("modal focus stays inside, Escape/cancel discard drafts, and reopen restore
   await expect(page.getByRole("button", { name: "모사사우루스", exact: true })).toHaveAttribute("aria-pressed", "false");
   await page.getByRole("button", { name: "스테고사우루스 선택 해제" }).click();
   await expect(done).toBeDisabled();
-  await page.getByRole("button", { name: "취소", exact: true }).click();
+  await page.getByRole("button", { name: "친구 선택 닫기", exact: true }).click();
   await expect(page.getByText("주인공: 스테고", { exact: true })).toBeVisible();
   expect(apiCalls).toBe(0);
 });
@@ -141,8 +153,8 @@ test("modal focus stays inside, Escape/cancel discard drafts, and reopen restore
 test("whole-card border selection, name search and new catalog IDs", async ({ page }) => {
   const count = { story: 0, speech: 0 }; await mockStory(page, count);
   await page.goto("/");
-  await page.getByRole("button", { name: "친구 고르기" }).click();
-  const dialog = page.getByRole("dialog");
+  await pickerTrigger(page, "친구 고르기").click();
+  const dialog = pickerSurface(page);
   await expect(dialog.getByRole("checkbox")).toHaveCount(0);
   const search = page.getByRole("searchbox", { name: "공룡 이름 검색" });
   await search.fill("브론토");
@@ -166,6 +178,94 @@ test("whole-card border selection, name search and new catalog IDs", async ({ pa
   await page.getByRole("button", { name: "동화 만들기", exact: true }).click();
   await expect(page.getByRole("heading", { name: content.title })).toBeVisible();
   expect(count).toEqual({ story: 1, speech: 0 });
+});
+
+test("responsive picker gives cards space and keeps navigation and confirmation visible", async ({ page }) => {
+  await page.goto("/");
+  await pickerTrigger(page).click();
+  const surface = pickerSurface(page);
+  const card = page.getByRole("button", { name: "스테고사우루스", exact: true });
+  const description = card.getByText("신중하고 다정하며, 주변을 잘 살펴봐요");
+  if (isMobile(page)) {
+    await expect(page).toHaveURL("/characters");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    const bounds = (await surface.boundingBox())!;
+    expect(bounds.x).toBe(0); expect(bounds.y).toBe(0);
+    expect(bounds.width).toBe(page.viewportSize()!.width);
+    expect(bounds.height).toBe(page.viewportSize()!.height);
+    await expect(description).toBeHidden();
+    expect((await page.getByRole("tabpanel").boundingBox())!.height).toBeGreaterThan(450);
+  } else {
+    await expect(page).toHaveURL("/");
+    expect((await surface.boundingBox())!.width).toBeLessThan(page.viewportSize()!.width);
+    await expect(description).toBeVisible();
+  }
+  const initialBounds = await surface.boundingBox();
+  const initialPanelWidth = (await page.getByRole("tabpanel").boundingBox())!.width;
+  for (const tab of [/바다/, /초식/, /전체/]) {
+    await page.getByRole("tab", { name: tab }).click();
+    expect(await surface.boundingBox()).toEqual(initialBounds);
+  }
+  const search = page.getByRole("searchbox", { name: "공룡 이름 검색" });
+  for (const [query, count] of [["브론토", 1], ["없는공룡이름", 0]] as const) {
+    await search.fill(query);
+    await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(count);
+    expect(await surface.boundingBox()).toEqual(initialBounds);
+    expect((await page.getByRole("tabpanel").boundingBox())!.width).toBe(initialPanelWidth);
+    await expect(page.getByRole("button", { name: "선택 완료" })).toBeInViewport();
+  }
+  await expect(page.getByRole("button", { name: "검색 지우기" })).toHaveCount(0);
+  // Chromium's native search-input X lives in browser UI, outside the DOM.
+  const searchBounds = (await search.boundingBox())!;
+  await search.click({ position: { x: searchBounds.width - 18, y: searchBounds.height / 2 } });
+  await expect(search).toHaveValue("");
+  await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(60);
+  await card.click();
+  expect(await surface.boundingBox()).toEqual(initialBounds);
+  await expect(description).toBeVisible();
+  await page.screenshot({ path: `test-results/${test.info().project.name}-picker-selected.png` });
+  await card.click();
+  const tabs = page.getByRole("tablist"); const tabsY = (await tabs.boundingBox())!.y;
+  await page.getByRole("tabpanel").evaluate((node) => { node.scrollTop = node.scrollHeight; });
+  expect((await tabs.boundingBox())!.y).toBe(tabsY);
+  await expect(page.getByRole("searchbox")).toBeInViewport();
+  await expect(page.getByRole("button", { name: "선택 완료" })).toBeInViewport();
+  await page.getByRole("button", { name: "틸로사우루스", exact: true }).click();
+  await page.getByRole("button", { name: "선택 완료" }).click();
+  await expect(page.getByText("주인공: 틸로", { exact: true })).toBeVisible();
+});
+
+test("picker page back and reload discard drafts, while confirmation preserves other choices", async ({ page }) => {
+  let apiCalls = 0;
+  page.on("request", (request) => { if (request.url().includes("/api/")) apiCalls += 1; });
+  await page.goto("/");
+  await page.getByRole("radio", { name: /배려/ }).check();
+  await page.getByRole("radio", { name: "약 2분", exact: true }).check();
+  await chooseFriends(page, ["스테고사우루스"]);
+  // Exercise the real route on both viewport sizes, including direct page visits.
+  if (isMobile(page)) await pickerTrigger(page).click();
+  else await page.evaluate(() => { (document.querySelector('a[href="/characters"]') as HTMLAnchorElement).click(); });
+  await expect(page).toHaveURL("/characters");
+  await page.getByRole("button", { name: "모사사우루스", exact: true }).click();
+  await page.goBack();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByText("주인공: 스테고", { exact: true })).toBeVisible();
+  if (isMobile(page)) await pickerTrigger(page).click();
+  else await page.evaluate(() => { (document.querySelector('a[href="/characters"]') as HTMLAnchorElement).click(); });
+  await expect(page.getByRole("button", { name: "모사사우루스", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await page.getByRole("button", { name: "모사사우루스", exact: true }).click();
+  await page.getByRole("button", { name: "선택 완료" }).click();
+  await expect(page.getByRole("radio", { name: /배려/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "약 2분", exact: true })).toBeChecked();
+  await expect(page.getByText("주인공: 스테고 / 함께할 친구: 모사")).toBeVisible();
+  await page.goto("/characters");
+  await expect(page.getByRole("button", { name: "선택 완료" })).toBeDisabled();
+  await page.getByRole("button", { name: "스테고사우루스", exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "선택 완료" })).toBeDisabled();
+  await page.getByRole("button", { name: "친구 선택 닫기" }).click();
+  await expect(page).toHaveURL("/");
+  expect(apiCalls).toBe(0);
 });
 
 test("all 60 local restorations decode and have visible attribution", async ({ page }) => {
@@ -219,7 +319,7 @@ test("all 60 local restorations decode and have visible attribution", async ({ p
 test("missing artwork keeps card selection usable", async ({ page }) => {
   await page.route("**/dinosaurs/stegosaurus.png", (route) => route.fulfill({ status: 404, body: "Not found" }));
   await page.goto("/");
-  await page.getByRole("button", { name: "친구 고르기" }).click();
+  await pickerTrigger(page, "친구 고르기").click();
   const card = page.getByRole("button", { name: "스테고사우루스", exact: true });
   await expect(card.getByText("그림을 불러오지 못했어요")).toBeVisible();
   await card.click();

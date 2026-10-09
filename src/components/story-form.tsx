@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { characters, themes, characterById, type Selection } from "@/src/lib/story-options";
 import { CharacterPicker } from "./character-picker";
 type Props = {
@@ -28,7 +29,11 @@ export function StoryForm({ selection, busy, onSelection, onGenerate, onReset }:
           <p className="font-semibold">이야기의 주인공을 만나보세요</p>
           <p className="helper mt-2">초식·육식·바다 친구 {characters.length}종 중에서 골라요.</p>
         </div>}
-        <button ref={pickerTrigger} type="button" className="button w-full" aria-haspopup="dialog" aria-expanded={pickerOpen}
+        <Link href="/characters" className="button block w-full text-center sm:hidden" aria-disabled={busy || undefined}
+          tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>
+          {selection.characterIds.length ? "친구 바꾸기" : "친구 고르기"}
+        </Link>
+        <button ref={pickerTrigger} type="button" className="button hidden w-full sm:block" aria-haspopup="dialog" aria-expanded={pickerOpen}
           aria-controls={pickerOpen ? "character-picker" : undefined} onClick={() => setPickerOpen(true)}>
           {selection.characterIds.length ? "친구 바꾸기" : "친구 고르기"}
         </button>

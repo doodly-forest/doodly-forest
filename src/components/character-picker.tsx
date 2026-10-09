@@ -5,9 +5,9 @@ import { characterById, characterCategories, characters, type CharacterCategory 
 import { CharacterArtwork } from "./character-artwork";
 
 const tabs = [{ id: "all", name: "전체" }, ...characterCategories] as const;
-type Props = { selectedIds: string[]; onConfirm: (ids: string[]) => void; onDismiss: () => void };
+type Props = { selectedIds: string[]; onConfirm: (ids: string[]) => void; onDismiss: () => void; mode?: "dialog" | "page" };
 
-export function CharacterPicker({ selectedIds, onConfirm, onDismiss }: Props) {
+export function CharacterPicker({ selectedIds, onConfirm, onDismiss, mode = "dialog" }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const tabButtons = useRef<(HTMLButtonElement | null)[]>([]);
   const [draft, setDraft] = useState(() => [...selectedIds]);
@@ -19,16 +19,16 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss }: Props) {
     [character.name, character.storyName, character.id].some((name) => name.toLowerCase().replace(/\s+/g, "").includes(query)));
 
   useEffect(() => {
-    const element = dialog.current!;
+    const element = dialog.current;
     const overflow = document.body.style.overflow;
-    element.showModal();
+    element?.showModal();
     document.body.style.overflow = "hidden";
     tabButtons.current[0]?.focus();
     return () => {
-      element.close();
+      element?.close();
       document.body.style.overflow = overflow;
     };
-  }, []);
+  }, [mode]);
 
   function dismiss() {
     dialog.current?.close();
@@ -64,27 +64,24 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss }: Props) {
     if (target) { event.preventDefault(); target.focus(); }
   }
 
-  return (
-    <dialog ref={dialog} id="character-picker" aria-modal="true" aria-labelledby="picker-title" aria-describedby="picker-help"
-      className="character-dialog" onKeyDown={keepFocusInside} onCancel={(event) => { event.preventDefault(); dismiss(); }}
-      onClick={(event) => {
-        if (event.target !== event.currentTarget) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dismiss();
-      }}>
+  const Heading = mode === "page" ? "h1" : "h2";
+  const content = (
       <div className="picker-layout">
-        <header className="shrink-0 px-4 pt-5 sm:px-6">
-          <div className="flex items-start justify-between gap-3">
-            <div><p className="helper">공룡과 바다 친구 {characters.length}종</p>
-              <h2 id="picker-title" className="mt-1 text-xl font-bold">함께할 친구 고르기</h2></div>
-            <button type="button" className="button" onClick={dismiss} aria-label="친구 선택 닫기">닫기</button>
+        <header className="picker-header shrink-0 px-4 pt-5 sm:px-6">
+          <div className="picker-heading flex items-start justify-between gap-3">
+            <div><p className="picker-count helper">공룡과 바다 친구 {characters.length}종</p>
+              <Heading id="picker-title" className="mt-1 text-xl font-bold">함께할 친구 고르기</Heading></div>
+            <button type="button" className="picker-dismiss button" onClick={dismiss} aria-label="친구 선택 닫기">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="m6 6 12 12M18 6 6 18" />
+              </svg>
+            </button>
           </div>
-          <p id="picker-help" className="helper mt-3">1~2명을 골라주세요. 먼저 고른 친구가 주인공이 돼요.</p>
-          <div className="mt-3 flex items-center gap-2">
+          <p id="picker-help" className="helper mt-3"><span className="hidden sm:inline">1~2명을 골라주세요. 먼저 고른 친구가 주인공이 돼요.</span><span className="sm:hidden">최대 2명 · 먼저 고른 친구가 주인공</span></p>
+          <div className="picker-search-row mt-3">
             <label htmlFor="character-search" className="sr-only">공룡 이름 검색</label>
             <input id="character-search" type="search" value={search} maxLength={60} onChange={(event) => setSearch(event.target.value)}
-              placeholder="공룡 이름이나 별명으로 찾아보세요" className="character-search" />
-            {search && <button type="button" className="button shrink-0" onClick={() => setSearch("")}>검색 지우기</button>}
+              placeholder="이름이나 별명으로 찾아보세요" className="character-search" />
           </div>
           <div role="tablist" aria-label="친구 분류" className="picker-tabs mt-4">
             {tabs.map((tab, index) => <button key={tab.id} type="button" role="tab" id={`picker-tab-${tab.id}`}
@@ -119,12 +116,12 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss }: Props) {
             </div>
           </>}
         </div>)}
-        <footer className="shrink-0 border-t border-[#e0e4d8] bg-[#f7f9f3] px-4 py-4 sm:px-6">
-          <div className="flex items-center justify-between gap-2">
+        <footer className="picker-footer shrink-0 border-t border-[#e0e4d8] bg-[#f7f9f3] px-4 py-4 sm:px-6">
+          <div className="picker-summary flex items-center justify-between gap-2">
             <p className="helper font-semibold" aria-live="polite">선택한 친구 {draft.length}/2</p>
             <a href="/image-credits" target="_blank" rel="noopener noreferrer" className="helper underline underline-offset-4">그림 출처·이용 조건 <span className="sr-only">(새 탭)</span>↗</a>
           </div>
-          <ol aria-label="선택한 친구" className="mt-2 flex flex-wrap gap-2">
+          <ol aria-label="선택한 친구" className="picker-selected mt-2 flex flex-wrap gap-2">
             {draft.map((id, index) => <li key={id}>
               <button type="button" className="selected-chip" onClick={() => toggle(id)} aria-label={`${characterById(id)?.name} 선택 해제`}>
                 {index === 0 ? "주인공" : "함께할 친구"}: {characterById(id)?.storyName} <span aria-hidden="true">×</span>
@@ -132,8 +129,7 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss }: Props) {
             </li>)}
           </ol>
           <p role="status" className="notice">{notice}</p>
-          <div className="mt-2 flex gap-3">
-            <button type="button" className="button" onClick={dismiss}>취소</button>
+          <div className="picker-actions mt-2 flex">
             <button type="button" className="button primary grow" disabled={!draft.length} onClick={() => {
               dialog.current?.close();
               onConfirm([...draft]);
@@ -141,6 +137,14 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss }: Props) {
           </div>
         </footer>
       </div>
-    </dialog>
   );
+  if (mode === "page") return <main id="character-picker" className="character-picker-page" aria-labelledby="picker-title" aria-describedby="picker-help"
+    onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); dismiss(); } }}>{content}</main>;
+  return <dialog ref={dialog} id="character-picker" aria-modal="true" aria-labelledby="picker-title" aria-describedby="picker-help"
+    className="character-dialog" onKeyDown={keepFocusInside} onCancel={(event) => { event.preventDefault(); dismiss(); }}
+    onClick={(event) => {
+      if (event.target !== event.currentTarget) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dismiss();
+    }}>{content}</dialog>;
 }
