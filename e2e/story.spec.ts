@@ -442,7 +442,7 @@ test("reset during a request leaves defaults and ignores late response", async (
   await page.goto("/");
   await chooseFriends(page, ["스테고사우루스"]);
   await page.getByRole("button", { name: "동화 만들기", exact: true }).click();
-  await expect(page.getByText("동화를 만들고 내용을 확인하고 있어요.")).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("스테고사우루스의 동화를 만들고 있어요");
   await expect(page).toHaveURL("/story");
   await expect(page.getByRole("button", { name: "선택 바꾸기" })).toBeEnabled();
   await page.getByRole("button", { name: "처음으로" }).click();

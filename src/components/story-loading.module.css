@@ -1,0 +1,106 @@
+.loading {
+  padding: 1.5rem 0 1.75rem;
+  text-align: center;
+}
+
+.artwork {
+  display: block;
+  width: 2.7rem;
+  height: auto;
+  margin: 0 auto 1.25rem;
+  overflow: visible;
+}
+
+.book {
+  animation: book-float 4s ease-in-out infinite;
+}
+
+.star {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: star-glow 2.8s ease-in-out infinite;
+}
+
+.page {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: page-turn 3.2s ease-in-out infinite;
+}
+
+.heading {
+  color: #365e45;
+  font-size: clamp(1.125rem, 4.5vw, 1.375rem);
+  font-weight: 700;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+}
+
+.heading span {
+  display: block;
+}
+
+.description {
+  margin-top: 0.75rem;
+  color: #5d695f;
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+@keyframes book-float {
+  0%,
+  100% {
+    transform: translateY(2px);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes star-glow {
+  0%,
+  100% {
+    transform: scale(0.9);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes page-turn {
+  0%,
+  12% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+  22% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleX(0.05);
+    opacity: 1;
+  }
+  78% {
+    transform: scaleX(-1);
+    opacity: 1;
+  }
+  88%,
+  100% {
+    transform: scaleX(-1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book,
+  .star,
+  .page {
+    animation: none;
+  }
+  .page {
+    display: none;
+  }
+}

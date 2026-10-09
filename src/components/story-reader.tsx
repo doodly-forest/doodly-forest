@@ -7,6 +7,7 @@ import { formatDuration } from "@/src/lib/story-text";
 import type { ApiError } from "@/src/lib/story-schema";
 import { useStorySession } from "./story-session";
 import { StoryShell } from "./story-shell";
+import { StoryLoading } from "./story-loading";
 
 function ErrorNotice({ error }: { error: ApiError }) {
   return <div className="error" role="alert"><p>{error.message}</p>
@@ -41,8 +42,8 @@ export function StoryReader() {
         <button className="button" onClick={() => goToSelection(true)}>처음으로</button>
       </div>
       <section aria-label="동화 결과" className="rounded-2xl border border-[#e0e4d8] bg-[#fffef9] p-5 sm:p-8">
-        <div role="status" aria-live="polite">
-          {storyStatus === "loading" && <p className="py-8 text-center leading-7">동화를 만들고 내용을 확인하고 있어요.</p>}
+        <div role="status" aria-live="polite" aria-atomic="true">
+          {storyStatus === "loading" && <StoryLoading characterName={characterById(state.selection.characterIds[0])?.name} />}
           {storyStatus === "success" && <p className="helper mb-5">동화가 완성됐어요. 내용을 먼저 읽어보세요.</p>}
         </div>
         {state.storyError && <div className="space-y-4"><ErrorNotice error={state.storyError} />
