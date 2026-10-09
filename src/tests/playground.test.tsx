@@ -33,7 +33,7 @@ function TestApp() {
 import { useStoryPlayground } from "../hooks/use-story-playground";
 import { TIMEOUTS } from "../lib/story-config";
 import { defaultSelection } from "../lib/story-options";
-import { content, storyFixture } from "./fixtures";
+import { content, storyFixture, vehicleContent, vehicleSelection } from "./fixtures";
 
 const fetchMock = vi.fn<typeof fetch>();
 const createUrl = vi.fn(() => "blob:test-audio");
@@ -76,10 +76,11 @@ function hookWithSelection() {
   act(() => hook.result.current.updateSelection({ ...defaultSelection(), characterIds: ["stegosaurus"] }));
   return hook;
 }
-it("T01–T04: dinosaur-only defaults, category tabs, ordered roles and cross-tab limit", async () => {
+it("T01–T04: dinosaur defaults, category tabs, ordered roles and cross-tab limit", async () => {
   const user = userEvent.setup(); render(<TestApp />);
   expect(screen.getByRole("button", { name: "동화 만들기" })).toBeDisabled();
-  expect(screen.queryByText(/자동차/)).not.toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: /공룡·바다 친구들/ })).toBeChecked();
+  expect(screen.getByRole("radio", { name: /자동차 마을/ })).not.toBeChecked();
   expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
   expect(screen.getByRole("radio", { name: /우정/ })).toBeChecked();
   expect(screen.getByRole("radio", { name: "약 1분" })).toBeChecked();
@@ -108,6 +109,64 @@ it("T01–T04: dinosaur-only defaults, category tabs, ordered roles and cross-ta
   expect(screen.getByRole("radio", { name: /배려/ })).toBeChecked();
   expect(screen.getByRole("radio", { name: "약 2분" })).toBeChecked();
   expect(fetchMock).not.toHaveBeenCalled();
+});
+it("vehicle categories, common aliases and cross-tab limits keep ordered drafts until confirmation", async () => {
+  const user = userEvent.setup(); render(<TestApp />);
+  await user.click(screen.getByRole("radio", { name: /자동차 마을/ }));
+  await user.click(screen.getByRole("button", { name: "친구 고르기" }));
+  const panel = () => within(screen.getByRole("tabpanel"));
+  expect(panel().getAllByRole("button")).toHaveLength(22);
+  expect(screen.queryByRole("tab", { name: /초식/ })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("tab", { name: /일상/ }));
+  expect(panel().getAllByRole("button")).toHaveLength(7);
+  await user.click(screen.getByRole("button", { name: "택시" }));
+  expect(new URL((screen.getByRole("img", { name: "택시 일러스트" }) as HTMLImageElement).src).pathname).toBe("/vehicles/taxi.svg");
+  await user.click(screen.getByRole("tab", { name: /중장비/ }));
+  expect(panel().getAllByRole("button")).toHaveLength(10);
+  const search = screen.getByRole("searchbox", { name: "자동차 이름 검색" });
+  expect(search).toHaveAttribute("maxlength", "60");
+  for (const alias of ["포크레인", "굴삭기", "굴리", " EXCAVATOR "]) {
+    await user.clear(search); await user.type(search, alias);
+    expect(panel().getAllByRole("button")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "굴착기" })).toBeVisible();
+  }
+  await user.click(screen.getByRole("button", { name: "굴착기" }));
+  await user.clear(search);
+  await user.click(screen.getByRole("tab", { name: /도움/ }));
+  expect(panel().getAllByRole("button")).toHaveLength(5);
+  await user.click(screen.getByRole("button", { name: "소방차" }));
+  expect(screen.getByText("친구는 최대 2명까지 고를 수 있어요")).toBeVisible();
+  expect(screen.getByRole("button", { name: "소방차" })).toHaveAttribute("aria-pressed", "false");
+  await user.click(screen.getByRole("button", { name: "선택 완료" }));
+  expect(screen.getByText("주인공: 택이 / 함께할 친구: 굴리")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "친구 바꾸기" }));
+  await user.click(screen.getByRole("button", { name: "택시 선택 해제" }));
+  await user.click(screen.getByRole("button", { name: "친구 선택 닫기" }));
+  expect(screen.getByText("주인공: 택이 / 함께할 친구: 굴리")).toBeVisible();
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+it("switching worlds clears only friends, and a vehicle story sends the chosen world and IDs", async () => {
+  const user = userEvent.setup(); render(<TestApp />);
+  await chooseFriends(user);
+  await user.click(screen.getByRole("radio", { name: /배려/ }));
+  await user.click(screen.getByRole("radio", { name: "약 2분" }));
+  await user.click(screen.getByRole("radio", { name: /자동차 마을/ }));
+  expect(screen.queryByRole("list", { name: "이야기에 나올 친구" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "동화 만들기" })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: /배려/ })).toBeChecked();
+  expect(screen.getByRole("radio", { name: "약 2분" })).toBeChecked();
+  await chooseFriends(user, ["버스", "굴착기"]);
+  await user.click(screen.getByRole("button", { name: "동화 만들기" }));
+  await screen.findByRole("heading", { name: vehicleContent.title });
+  expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string)).toEqual({ ...vehicleSelection, targetSeconds: 120 });
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole("button", { name: "선택 바꾸기" }));
+  expect(screen.getByText("주인공: 부비 / 함께할 친구: 굴리")).toBeVisible();
+  await user.click(screen.getByRole("radio", { name: /공룡·바다 친구들/ }));
+  expect(screen.getByRole("button", { name: "동화 만들기" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "친구 고르기" }));
+  expect(within(screen.getByRole("tabpanel")).getAllByRole("button")).toHaveLength(60);
+  expect(screen.getByText("선택한 친구 0/2")).toBeVisible();
 });
 it.each(["친구 선택 닫기", "Escape"])("dismiss via %s discards the draft and reopens with committed choices", async (action) => {
   const user = userEvent.setup(); render(<TestApp />);

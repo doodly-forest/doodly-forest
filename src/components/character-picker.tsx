@@ -1,22 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { characterById, characterCategories, characters, type CharacterCategory } from "@/src/lib/story-options";
+import { characterById, characterCategories, charactersForWorld, characterSearchAliases, worlds, type CharacterCategory, type World } from "@/src/lib/story-options";
 import { CharacterArtwork } from "./character-artwork";
 
-const tabs = [{ id: "all", name: "전체" }, ...characterCategories] as const;
-type Props = { selectedIds: string[]; onConfirm: (ids: string[]) => void; onDismiss: () => void; mode?: "dialog" | "page" };
+type Props = { world: World; selectedIds: string[]; onConfirm: (ids: string[]) => void; onDismiss: () => void; mode?: "dialog" | "page" };
 
-export function CharacterPicker({ selectedIds, onConfirm, onDismiss, mode = "dialog" }: Props) {
+export function CharacterPicker({ world, selectedIds, onConfirm, onDismiss, mode = "dialog" }: Props) {
+  const characters = charactersForWorld(world);
+  const categories = characterCategories.filter((category) => category.world === world);
+  const tabs = [{ id: "all", name: "전체" } as const, ...categories];
   const dialog = useRef<HTMLDialogElement>(null);
   const tabButtons = useRef<(HTMLButtonElement | null)[]>([]);
   const [draft, setDraft] = useState(() => [...selectedIds]);
   const [category, setCategory] = useState<CharacterCategory | "all">("all");
   const [search, setSearch] = useState("");
   const [notice, setNotice] = useState("");
-  const query = search.trim().normalize("NFKC").toLowerCase().replace(/\s+/g, "");
+  const normalize = (value: string) => value.trim().normalize("NFKC").toLowerCase().replace(/[\s-]+/g, "");
+  const query = normalize(search);
   const visible = characters.filter((character) => (category === "all" || character.category === category) &&
-    [character.name, character.storyName, character.id].some((name) => name.toLowerCase().replace(/\s+/g, "").includes(query)));
+    [character.name, character.storyName, character.id, ...(characterSearchAliases[character.id] ?? [])].some((name) => normalize(name).includes(query)));
 
   useEffect(() => {
     const element = dialog.current;
@@ -69,7 +72,7 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss, mode = "dia
       <div className="picker-layout">
         <header className="picker-header shrink-0 px-4 pt-5 sm:px-6">
           <div className="picker-heading flex items-start justify-between gap-3">
-            <div><p className="picker-count helper">공룡과 바다 친구 {characters.length}종</p>
+            <div><p className="picker-count helper">{worlds.find((item) => item.id === world)?.name} · {characters.length}종</p>
               <Heading id="picker-title" className="mt-1 text-xl font-bold">함께할 친구 고르기</Heading></div>
             <button type="button" className="picker-dismiss button" onClick={dismiss} aria-label="친구 선택 닫기">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -79,7 +82,7 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss, mode = "dia
           </div>
           <p id="picker-help" className="helper mt-3"><span className="hidden sm:inline">1~2명을 골라주세요. 먼저 고른 친구가 주인공이 돼요.</span><span className="sm:hidden">최대 2명 · 먼저 고른 친구가 주인공</span></p>
           <div className="picker-search-row mt-3">
-            <label htmlFor="character-search" className="sr-only">공룡 이름 검색</label>
+            <label htmlFor="character-search" className="sr-only">{world === "vehicle" ? "자동차" : "공룡"} 이름 검색</label>
             <input id="character-search" type="search" value={search} maxLength={60} onChange={(event) => setSearch(event.target.value)}
               placeholder="이름이나 별명으로 찾아보세요" className="character-search" />
           </div>
@@ -95,7 +98,7 @@ export function CharacterPicker({ selectedIds, onConfirm, onDismiss, mode = "dia
         {tabs.map((tab) => <div key={tab.id} role="tabpanel" id={`picker-panel-${tab.id}`} aria-labelledby={`picker-tab-${tab.id}`}
           hidden={category !== tab.id} className="picker-panel px-4 py-4 sm:px-6">
           {category === tab.id && <>
-            <p className="helper mb-4">{category === "all" ? "여러 시대의 친구들이 함께하는 상상 동화예요." : characterCategories.find((item) => item.id === category)?.description}</p>
+            <p className="helper mb-4">{category === "all" ? (world === "vehicle" ? "일상·중장비·도움 차량들이 함께하는 상상 동화예요." : "여러 시대의 친구들이 함께하는 상상 동화예요.") : categories.find((item) => item.id === category)?.description}</p>
             {query && <p role="status" className="helper mb-3">검색 결과 {visible.length}종</p>}
             {!visible.length && <div className="py-6 text-center">
               <p className="helper">이 분류에는 찾는 친구가 없어요. 다른 이름이나 전체 탭에서 찾아보세요.</p>

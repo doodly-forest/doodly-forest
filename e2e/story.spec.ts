@@ -1,8 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
-import { storyFixture, content } from "../src/tests/fixtures";
+import { storyFixture, content, vehicleContent, vehicleSelection } from "../src/tests/fixtures";
 import { silentMp3, silentWav } from "./audio-fixture";
 import { characters } from "../src/lib/story-options";
-import { dinosaurImages } from "../src/lib/dinosaur-images";
+import { characterImages } from "../src/lib/character-images";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/*", async (route) => {
@@ -77,9 +77,9 @@ test(`selection → story → ${format} playback → reuse → reset and no pers
 
 test("responsive picker keyboard navigation, cross-tab selection and maximum selection", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("자동차 마을")).toHaveCount(0);
+  await expect(page.getByRole("radio", { name: /공룡·바다 친구들/ })).toBeChecked();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
-  await page.keyboard.press("Tab");
+  await pickerTrigger(page, "친구 고르기").focus();
   await expect(pickerTrigger(page, "친구 고르기")).toBeFocused();
   await page.keyboard.press("Enter");
   const dialog = pickerSurface(page);
@@ -115,6 +115,85 @@ test("responsive picker keyboard navigation, cross-tab selection and maximum sel
   await page.getByRole("radio", { name: "약 2분", exact: true }).check();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/${test.info().project.name}-selection.png`, fullPage: true });
+});
+
+test("vehicle selection, alias search, fixed picker height, draft cancellation and world switching", async ({ page }) => {
+  let apiCalls = 0;
+  page.on("request", (request) => { if (request.url().includes("/api/")) apiCalls += 1; });
+  await page.goto("/");
+  await chooseFriends(page, ["스테고사우루스"]);
+  await page.getByRole("radio", { name: /배려/ }).check();
+  await page.getByRole("radio", { name: "약 2분", exact: true }).check();
+  await page.getByRole("radio", { name: /자동차 마을/ }).check();
+  await expect(page.getByRole("button", { name: "동화 만들기", exact: true })).toBeDisabled();
+  await page.screenshot({ path: `test-results/${test.info().project.name}-vehicle-selection.png`, fullPage: true });
+  await pickerTrigger(page).click();
+  if (isMobile(page)) await expect(page).toHaveURL("/characters");
+  const surface = pickerSurface(page);
+  const initialHeight = (await surface.boundingBox())!.height;
+  await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(22);
+  await page.getByRole("tab", { name: /일상/ }).click();
+  await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(7);
+  await page.getByRole("button", { name: "택시", exact: true }).click();
+  await page.getByRole("tab", { name: /중장비/ }).click();
+  await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(10);
+  const search = page.getByRole("searchbox", { name: "자동차 이름 검색" });
+  await expect(search).toHaveAttribute("maxlength", "60");
+  await search.fill("포크레인");
+  await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(1);
+  await page.getByRole("button", { name: "굴착기", exact: true }).click();
+  expect((await surface.boundingBox())!.height).toBeCloseTo(initialHeight, 0);
+  await search.fill("");
+  await page.screenshot({ path: `test-results/${test.info().project.name}-vehicle-picker.png` });
+  await page.getByRole("tab", { name: /도움/ }).click();
+  await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(5);
+  await page.getByRole("button", { name: "소방차", exact: true }).click();
+  await expect(page.getByRole("button", { name: "소방차", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByText("친구는 최대 2명까지 고를 수 있어요")).toBeVisible();
+  await search.fill("없는자동차");
+  expect((await surface.boundingBox())!.height).toBeCloseTo(initialHeight, 0);
+  await page.getByRole("button", { name: "선택 완료" }).click();
+  await expect(page).toHaveURL("/");
+  await expect(page.getByText("주인공: 택이 / 함께할 친구: 굴리")).toBeVisible();
+  await pickerTrigger(page).click();
+  await page.getByRole("button", { name: "택시 선택 해제" }).click();
+  await page.getByRole("button", { name: "친구 선택 닫기" }).click();
+  await expect(page.getByText("주인공: 택이 / 함께할 친구: 굴리")).toBeVisible();
+  await page.getByRole("radio", { name: /공룡·바다 친구들/ }).check();
+  await expect(page.getByRole("button", { name: "동화 만들기", exact: true })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: /배려/ })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "약 2분", exact: true })).toBeChecked();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(apiCalls).toBe(0);
+});
+
+test("vehicle story and narration use the selected vehicle world without automatic speech", async ({ page }) => {
+  const count = { story: 0, speech: 0 };
+  await page.route("**/api/story", async (route) => {
+    count.story += 1;
+    expect(route.request().postDataJSON()).toEqual(vehicleSelection);
+    await route.fulfill({ json: storyFixture(vehicleSelection) });
+  });
+  await page.route("**/api/speech", async (route) => {
+    count.speech += 1;
+    expect(route.request().postDataJSON().text).toBe([vehicleContent.title, ...vehicleContent.paragraphs].join("\n\n"));
+    await route.fulfill({ contentType: "audio/wav", body: silentWav() });
+  });
+  await page.goto("/");
+  await page.getByRole("radio", { name: /자동차 마을/ }).check();
+  await chooseFriends(page, ["버스", "굴착기"]);
+  await page.getByRole("radio", { name: /배려/ }).check();
+  await page.getByRole("button", { name: "동화 만들기", exact: true }).click();
+  await expect(page).toHaveURL("/story");
+  await expect(page.getByRole("heading", { name: vehicleContent.title })).toBeVisible();
+  await expect(page.getByRole("article")).toContainText("자동차 마을 · 배려 · 목표 길이 약 1분");
+  expect(count).toEqual({ story: 1, speech: 0 });
+  await page.getByRole("button", { name: "읽어주기", exact: true }).click();
+  await expect(page.getByText(/실제 길이 00:02/)).toBeVisible();
+  expect(count).toEqual({ story: 1, speech: 1 });
+  await page.getByRole("button", { name: "선택 바꾸기" }).click();
+  await expect(page.getByRole("radio", { name: /자동차 마을/ })).toBeChecked();
+  await expect(page.getByText("주인공: 부비 / 함께할 친구: 굴리")).toBeVisible();
 });
 
 test("desktop focus trap and shared Escape/cancel draft handling", async ({ page }) => {
@@ -268,26 +347,31 @@ test("picker page back and reload discard drafts, while confirmation preserves o
   expect(apiCalls).toBe(0);
 });
 
-test("all 60 local restorations decode and have visible attribution", async ({ page }) => {
+test("all 82 local restorations and vehicle illustrations decode and have visible attribution", async ({ page }) => {
   let apiCalls = 0;
   page.on("request", (request) => { if (request.url().includes("/api/")) apiCalls += 1; });
   await page.goto("/image-credits");
   await expect(page.getByRole("heading", { name: "그림 출처·이용 조건", exact: true })).toBeVisible();
   const articles = page.getByRole("article");
-  await expect(articles).toHaveCount(60);
+  await expect(articles).toHaveCount(82);
   const images = articles.getByRole("img");
-  await expect(images).toHaveCount(60);
+  await expect(images).toHaveCount(82);
   await images.evaluateAll((nodes) => nodes.forEach((node) => { (node as HTMLImageElement).loading = "eager"; }));
   await expect.poll(() => images.evaluateAll((nodes) => nodes.filter((node) => {
     const image = node as HTMLImageElement;
     return image.complete && image.naturalWidth > 0;
-  }).length)).toBe(60);
+  }).length)).toBe(82);
   for (const character of characters) {
     const article = articles.filter({ has: page.getByRole("heading", { name: character.name, exact: true }) });
-    const artwork = dinosaurImages[character.id];
+    const artwork = characterImages[character.id];
     await expect(article).toContainText(artwork.author);
-    await expect(article.getByRole("link", { name: artwork.license, exact: true })).toHaveAttribute("href", artwork.licenseUrl || artwork.source);
-    await expect(article.getByRole("link", { name: "Wikimedia Commons 원본 파일" })).toHaveAttribute("href", artwork.source);
+    if (artwork.kind === "commons") {
+      await expect(article.getByRole("link", { name: artwork.license, exact: true })).toHaveAttribute("href", artwork.licenseUrl || artwork.source);
+      await expect(article.getByRole("link", { name: "Wikimedia Commons 원본 파일" })).toHaveAttribute("href", artwork.source);
+    } else {
+      await expect(article).toContainText("프로젝트에서 직접 작성한 SVG 일러스트");
+      await expect(article.getByRole("link")).toHaveCount(0);
+    }
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(apiCalls).toBe(0);
@@ -311,7 +395,7 @@ test("all 60 local restorations decode and have visible attribution", async ({ p
         }
       }, cards.slice(start, start + 15));
       await page.getByRole("img").evaluateAll((nodes) => Promise.all(nodes.map((node) => (node as HTMLImageElement).decode())));
-      await page.screenshot({ path: `test-results/dinosaur-contact-${start / 15 + 1}.png`, fullPage: true });
+      await page.screenshot({ path: `test-results/character-contact-${start / 15 + 1}.png`, fullPage: true });
     }
   }
 });
@@ -379,8 +463,11 @@ test("real local route returns configuration error with no API key", async ({ pa
   expect(crossSite.status()).toBe(403);
   expect(crossSite.headers()["cache-control"]).toBe("no-store");
   const vehicle = await request.post("/api/story", { data: { world: "vehicle", characterIds: ["bus"], theme: "friendship", targetSeconds: 60 } });
-  expect(vehicle.status()).toBe(400);
-  expect((await vehicle.json()).error.code).toBe("INVALID_INPUT");
+  expect(vehicle.status()).toBe(503);
+  expect((await vehicle.json()).error.code).toBe("API_NOT_CONFIGURED");
+  const mixed = await request.post("/api/story", { data: { ...vehicleSelection, characterIds: ["bus", "stegosaurus"] } });
+  expect(mixed.status()).toBe(400);
+  expect((await mixed.json()).error.code).toBe("INVALID_INPUT");
 });
 
 test("selection changes keep choices and release audio on returning", async ({ page }) => {

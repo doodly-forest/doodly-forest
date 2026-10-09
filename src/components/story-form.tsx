@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { characters, themes, characterById, type Selection } from "@/src/lib/story-options";
+import { charactersForWorld, worlds, themes, characterById, type Selection } from "@/src/lib/story-options";
 import { CharacterPicker } from "./character-picker";
 type Props = {
   selection: Selection; busy: boolean;
@@ -18,6 +18,18 @@ export function StoryForm({ selection, busy, onSelection, onGenerate, onReset }:
     <form onSubmit={(event) => { event.preventDefault(); onGenerate(); }} className="space-y-8">
       <fieldset disabled={busy} aria-describedby="character-help">
         <legend><span className="step">1</span>어떤 친구와 함께할까요?</legend>
+        <fieldset className="mb-4">
+          <legend className="sr-only">이야기 세계</legend>
+          <div className="grid grid-cols-2 gap-3">
+            {worlds.map((world) => <label key={world.id} className="choice">
+              <input type="radio" name="world" value={world.id} checked={selection.world === world.id} onChange={() => {
+                if (selection.world !== world.id) onSelection({ ...selection, world: world.id, characterIds: [] });
+              }} />
+              <span><strong className="break-keep">{world.name}</strong><small>{charactersForWorld(world.id).length}가지 친구</small></span>
+            </label>)}
+          </div>
+          <p className="helper mt-2">다른 세계를 고르면 선택한 친구가 초기화돼요.</p>
+        </fieldset>
         <p id="character-help" className="helper mb-3">먼저 고른 친구가 이야기의 주인공이 돼요.</p>
         {selection.characterIds.length ? <ol aria-label="이야기에 나올 친구" className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {selection.characterIds.map((id, index) => <li className="rounded-xl border border-[#c9d7c3] bg-[#f1f6eb] p-4" key={id}>
@@ -27,7 +39,7 @@ export function StoryForm({ selection, busy, onSelection, onGenerate, onReset }:
           </li>)}
         </ol> : <div className="mb-4 rounded-xl border border-dashed border-[#c9d3c5] bg-[#fafbf7] p-5">
           <p className="font-semibold">이야기의 주인공을 만나보세요</p>
-          <p className="helper mt-2">초식·육식·바다 친구 {characters.length}종 중에서 골라요.</p>
+          <p className="helper mt-2">{selection.world === "vehicle" ? "일상·중장비·도움 차량" : "초식·육식·바다 친구"} {charactersForWorld(selection.world).length}종 중에서 골라요.</p>
         </div>}
         <Link href="/characters" className="button block w-full text-center sm:hidden" aria-disabled={busy || undefined}
           tabIndex={busy ? -1 : undefined} onClick={(event) => { if (busy) event.preventDefault(); }}>
@@ -72,7 +84,7 @@ export function StoryForm({ selection, busy, onSelection, onGenerate, onReset }:
         <button className="button" type="button" onClick={onReset}>처음으로</button>
       </div>
     </form>
-    {pickerOpen && <CharacterPicker selectedIds={selection.characterIds} onDismiss={closePicker} onConfirm={(ids) => {
+    {pickerOpen && <CharacterPicker world={selection.world} selectedIds={selection.characterIds} onDismiss={closePicker} onConfirm={(ids) => {
       onSelection({ ...selection, characterIds: ids });
       closePicker();
     }} />}

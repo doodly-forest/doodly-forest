@@ -49,3 +49,11 @@ next-env.d.ts
 # local agent notes
 /.codex/
 /IMPLEMENTATION_REPORT.md
+
+# local image generation scripts
+/scripts/create-vehicle-artwork.mjs
+/scripts/import-dinosaur-images.py
+
+# local AI agent instructions
+/CLAUDE.md
+/AGENTS.md

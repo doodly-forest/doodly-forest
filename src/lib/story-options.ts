@@ -1,11 +1,15 @@
 export const worlds = [
   { id: "dinosaur", name: "공룡·바다 친구들", description: "공룡과 바다 친구들의 상상 이야기" },
+  { id: "vehicle", name: "자동차 마을", description: "서로 다른 일을 하는 자동차 친구들" },
 ] as const;
 export type World = (typeof worlds)[number]["id"];
 export const characterCategories = [
-  { id: "herbivore", name: "초식", description: "풀과 나뭇잎을 먹던 공룡 친구들이에요." },
-  { id: "carnivore", name: "육식", description: "고기를 먹던 공룡들도 동화에서는 다정한 친구가 돼요." },
-  { id: "marine", name: "바다", description: "공룡과 함께 살던 바다 파충류예요. 공룡과는 다른 동물이에요." },
+  { id: "herbivore", world: "dinosaur", name: "초식", description: "풀과 나뭇잎을 먹던 공룡 친구들이에요." },
+  { id: "carnivore", world: "dinosaur", name: "육식", description: "고기를 먹던 공룡들도 동화에서는 다정한 친구가 돼요." },
+  { id: "marine", world: "dinosaur", name: "바다", description: "공룡과 함께 살던 바다 파충류예요. 공룡과는 다른 동물이에요." },
+  { id: "everyday", world: "vehicle", name: "일상", description: "마을을 오가며 하루를 함께하는 자동차 친구들이에요." },
+  { id: "construction", world: "vehicle", name: "중장비", description: "땅을 고르고 물건을 옮기며 힘을 모으는 친구들이에요." },
+  { id: "helpers", world: "vehicle", name: "도움", description: "안전하고 깨끗한 마을을 위해 도와주는 친구들이에요." },
 ] as const;
 export type CharacterCategory = (typeof characterCategories)[number]["id"];
 // Categories are a browsing aid: land dinosaurs by diet, marine reptiles together.
@@ -71,6 +75,28 @@ export const characters = [
   { id: "elasmosaurus", world: "dinosaur", category: "marine", name: "엘라스모사우루스", storyName: "엘라", description: "잔잔한 물가에서 친구의 마음을 살펴요" },
   { id: "liopleurodon", world: "dinosaur", category: "marine", name: "리오플레우로돈", storyName: "리오", description: "물속에서도 친구와의 약속을 소중히 여겨요" },
   { id: "tylosaurus", world: "dinosaur", category: "marine", name: "틸로사우루스", storyName: "틸로", description: "파도 소리를 들으며 편안하게 쉬어요" },
+  { id: "bus", world: "vehicle", category: "everyday", name: "버스", storyName: "부비", description: "친구를 잘 챙기며 함께 가는 것을 좋아해요" },
+  { id: "taxi", world: "vehicle", category: "everyday", name: "택시", storyName: "택이", description: "친구가 가고 싶은 곳을 다정하게 물어봐요" },
+  { id: "school-bus", world: "vehicle", category: "everyday", name: "스쿨버스", storyName: "버니", description: "모두 준비됐는지 확인하고 천천히 출발해요" },
+  { id: "double-decker-bus", world: "vehicle", category: "everyday", name: "이층버스", storyName: "두리", description: "높은 창으로 보이는 풍경을 친구와 나눠요" },
+  { id: "car", world: "vehicle", category: "everyday", name: "승용차", storyName: "아리", description: "차례를 지키며 느긋하게 나들이해요" },
+  { id: "delivery-truck", world: "vehicle", category: "everyday", name: "택배차", storyName: "꾸리", description: "작은 선물도 소중하게 챙겨 전해줘요" },
+  { id: "camper-van", world: "vehicle", category: "everyday", name: "캠핑카", storyName: "캠피", description: "편히 쉴 자리를 찾으며 여행을 즐겨요" },
+  { id: "excavator", world: "vehicle", category: "construction", name: "굴착기", storyName: "굴리", description: "천천히 꼼꼼하게 문제를 해결해요" },
+  { id: "bulldozer", world: "vehicle", category: "construction", name: "불도저", storyName: "도저", description: "울퉁불퉁한 길을 차근차근 고르게 만들어요" },
+  { id: "dump-truck", world: "vehicle", category: "construction", name: "덤프트럭", storyName: "덤이", description: "무거운 짐도 친구들과 함께 나눠요" },
+  { id: "concrete-mixer", world: "vehicle", category: "construction", name: "레미콘", storyName: "빙글", description: "서두르지 않고 알맞게 섞는 걸 좋아해요" },
+  { id: "crane-truck", world: "vehicle", category: "construction", name: "크레인차", storyName: "크니", description: "주변을 살핀 뒤 조심스럽게 물건을 들어요" },
+  { id: "road-roller", world: "vehicle", category: "construction", name: "로드롤러", storyName: "꾹이", description: "한 걸음씩 나아가며 길을 단단하게 다져요" },
+  { id: "wheel-loader", world: "vehicle", category: "construction", name: "휠로더", storyName: "로더", description: "흩어진 모래를 모아 친구의 일을 도와요" },
+  { id: "forklift", world: "vehicle", category: "construction", name: "지게차", storyName: "지기", description: "상자를 낮게 들고 천천히 자리에 놓아요" },
+  { id: "backhoe-loader", world: "vehicle", category: "construction", name: "백호로더", storyName: "호야", description: "앞뒤 도구를 번갈아 쓰며 꼼꼼히 도와요" },
+  { id: "asphalt-paver", world: "vehicle", category: "construction", name: "아스팔트 피니셔", storyName: "펴리", description: "친구들이 다닐 길을 고르게 펼쳐요" },
+  { id: "fire-engine", world: "vehicle", category: "helpers", name: "소방차", storyName: "불이", description: "도움이 필요한 친구를 차분하게 도와요" },
+  { id: "ambulance", world: "vehicle", category: "helpers", name: "구급차", storyName: "도담", description: "다른 친구의 기분을 먼저 살펴요" },
+  { id: "police-car", world: "vehicle", category: "helpers", name: "경찰차", storyName: "지킴", description: "친구들이 차례를 지키도록 다정하게 안내해요" },
+  { id: "garbage-truck", world: "vehicle", category: "helpers", name: "청소차", storyName: "깨미", description: "깨끗하고 편안한 마을을 만드는 걸 좋아해요" },
+  { id: "tow-truck", world: "vehicle", category: "helpers", name: "견인차", storyName: "이음", description: "도움이 필요한 친구에게 먼저 물어보고 도와요" },
 ] as const;
 export const themes = [
   { id: "family", name: "가족", description: "서로 아끼는 마음을 전해요", direction: "다양한 가족·돌봄 관계를 따뜻하게 표현" },
@@ -91,3 +117,15 @@ export function defaultSelection(): Selection {
 export function characterById(id: string) {
   return characters.find((character) => character.id === id);
 }
+export function charactersForWorld(world: World) {
+  return characters.filter((character) => character.world === world);
+}
+export const characterSearchAliases: Readonly<Record<string, readonly string[]>> = {
+  bus: ["시내버스"], taxi: ["택시차"], "school-bus": ["통학버스", "유치원버스"],
+  "double-decker-bus": ["2층버스"], "delivery-truck": ["배달차", "배송차"],
+  excavator: ["굴삭기", "포크레인"], "concrete-mixer": ["믹서트럭", "콘크리트믹서"],
+  "crane-truck": ["기중기", "크레인"], "road-roller": ["롤러"], "wheel-loader": ["로더"],
+  "asphalt-paver": ["포장기", "아스팔트포장기"], "fire-engine": ["소방자동차"],
+  ambulance: ["앰뷸런스", "응급차"], "police-car": ["순찰차"], "garbage-truck": ["쓰레기차"],
+  "tow-truck": ["렉카", "레커차"],
+};

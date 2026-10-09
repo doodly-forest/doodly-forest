@@ -3,7 +3,7 @@ import { POST as storyPost } from "../../app/api/story/route";
 import { POST as speechPost } from "../../app/api/speech/route";
 import { TIMEOUTS } from "../lib/story-config";
 import { narrationText } from "../lib/story-text";
-import { content, selection } from "./fixtures";
+import { content, selection, vehicleContent, vehicleSelection } from "./fixtures";
 
 const transport = vi.fn<typeof fetch>();
 const text = narrationText(content);
@@ -87,6 +87,26 @@ describe("Gemini provider selection and SDK requests", () => {
       { id: "brontosaurus", category: "herbivore", role: "주인공" },
       { id: "tylosaurus", category: "marine", role: "함께할 친구" },
     ]);
+    expect(transport).toHaveBeenCalledTimes(2);
+  });
+
+  it("generates vehicle dialogue with server catalog roles and performs a separate content check", async () => {
+    queue(jsonResponse(vehicleContent)); approve();
+    const response = await storyPost(request(vehicleSelection));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ story: { ...vehicleContent, selection: vehicleSelection } });
+    expect(JSON.parse(callBody(0).contents[0].parts[0].text)).toMatchObject({
+      world: { id: "vehicle", name: "자동차 마을" },
+      characters: [
+        { id: "bus", name: "버스", category: "everyday", role: "주인공" },
+        { id: "excavator", name: "굴착기", category: "construction", role: "함께할 친구" },
+      ],
+    });
+    const instructions = callBody(0).systemInstruction.parts[0].text;
+    expect(instructions).toContain("선택한 차량의 생김새와 역할");
+    expect(instructions).toContain("각 인물의 성격과 선택한 주제");
+    expect(instructions).toContain("아이가 차를 운전하거나 중장비를 조작");
+    expect(JSON.parse(callBody(1).contents[0].parts[0].text)).toEqual({ text: narrationText(vehicleContent) });
     expect(transport).toHaveBeenCalledTimes(2);
   });
 

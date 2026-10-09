@@ -9,4 +9,4 @@ export const TIMEOUTS = {
   storyServer: 90_000, speechServer: 120_000,
   storyClient: 105_000, speechClient: 135_000,
 } as const;
-export const PROMPT_VERSION = "2026-10-06.v3";
+export const PROMPT_VERSION = "2026-10-09.v4";

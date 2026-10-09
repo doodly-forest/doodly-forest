@@ -4,7 +4,7 @@ import { POST as speechPost } from "../../app/api/speech/route";
 import { TIMEOUTS } from "../lib/story-config";
 import { withDeadline } from "../lib/deadline";
 import { narrationText } from "../lib/story-text";
-import { content, modelFixture, selection } from "./fixtures";
+import { content, modelFixture, selection, vehicleContent, vehicleSelection } from "./fixtures";
 
 const transport = vi.fn<typeof fetch>();
 function request(body: unknown = selection, headers: Record<string, string> = {}) {
@@ -41,7 +41,7 @@ describe("request boundary (T06, T07, T23, T24)", () => {
   it.each([
     { ...selection, world: "unknown" }, { ...selection, theme: "unknown" }, { ...selection, targetSeconds: "60" }, { ...selection, targetSeconds: 61 },
     { ...selection, characterIds: [] }, { ...selection, characterIds: ["unknown"] },
-    { ...selection, characterIds: ["bus"] }, { ...selection, world: "vehicle", characterIds: ["bus"] },
+    { ...selection, characterIds: ["bus"] }, { ...selection, world: "vehicle", characterIds: ["bus", "stegosaurus"] },
     { ...selection, world: "vehicle", characterIds: ["stegosaurus"] },
     { ...selection, characterIds: ["stegosaurus", "stegosaurus"] },
     { ...selection, characterIds: ["stegosaurus", "mosasaurus", "triceratops"] },
@@ -91,6 +91,21 @@ describe("generation and content checks (T08–T12)", () => {
     expect(textRequest.input[0].content).toContain("주인공");
     expect(textRequest.input[0].content).toContain("모사사우루스");
     expect(JSON.parse(transport.mock.calls[1][1]!.body as string)).toEqual({ input: narrationText(content), model: "omni-moderation-latest" });
+  });
+  it("passes vehicle roles, names and categories to the configured OpenAI provider", async () => {
+    model(vehicleContent); approved();
+    const response = await storyPost(request(vehicleSelection));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ story: { ...vehicleContent, selection: vehicleSelection } });
+    const generated = JSON.parse(transport.mock.calls[0][1]!.body as string);
+    expect(JSON.parse(generated.input[0].content)).toMatchObject({
+      world: { id: "vehicle", name: "자동차 마을" },
+      characters: [
+        { id: "bus", storyName: "부비", category: "everyday", role: "주인공" },
+        { id: "excavator", storyName: "굴리", category: "construction", role: "함께할 친구" },
+      ],
+    });
+    expect(transport).toHaveBeenCalledTimes(2);
   });
   it.each([
     { title: "", paragraphs: content.paragraphs }, { title: "가".repeat(61), paragraphs: content.paragraphs },

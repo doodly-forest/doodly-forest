@@ -12,7 +12,7 @@ export function CharacterSelection() {
   // This also provides a safe destination when /characters was opened directly.
   function returnToSelection() { router.replace("/"); }
 
-  return <CharacterPicker mode="page" selectedIds={selection.characterIds}
+  return <CharacterPicker mode="page" world={selection.world} selectedIds={selection.characterIds}
     onDismiss={returnToSelection} onConfirm={(ids) => {
       updateSelection({ ...selection, characterIds: ids });
       returnToSelection();

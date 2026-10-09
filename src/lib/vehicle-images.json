@@ -1,0 +1,200 @@
+{
+  "bus": {
+    "src": "/vehicles/bus.svg",
+    "width": 360,
+    "height": 240,
+    "title": "버스 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "96bbd686658a78dd4ed4174a3f9f5da1ca675b60c7516cf4e9a63ff909c44533"
+  },
+  "taxi": {
+    "src": "/vehicles/taxi.svg",
+    "width": 360,
+    "height": 240,
+    "title": "택시 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "d1dcc0193a9ea32db5f950b0e3f26eb6536cfdb3ca15f20dcf9c2ee9290bc22e"
+  },
+  "school-bus": {
+    "src": "/vehicles/school-bus.svg",
+    "width": 360,
+    "height": 240,
+    "title": "스쿨버스 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "1c10eb743a80c74989e248b6071c63b6de5788262f2f2b909697b2b949f34a2c"
+  },
+  "double-decker-bus": {
+    "src": "/vehicles/double-decker-bus.svg",
+    "width": 360,
+    "height": 240,
+    "title": "이층버스 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "536f3e479d6e4dee66f2b7cf2c77ca398f87d1ba4f0cdd7ce45b7a7bb9dfe780"
+  },
+  "car": {
+    "src": "/vehicles/car.svg",
+    "width": 360,
+    "height": 240,
+    "title": "승용차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "73de0039468e3fbebd0a85feaf0adc2a89e1ca6de1876239c9da6fccf7c8d98c"
+  },
+  "delivery-truck": {
+    "src": "/vehicles/delivery-truck.svg",
+    "width": 360,
+    "height": 240,
+    "title": "택배차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "6012e708486a5d3966c46fc0bc9edda30ee30aaeb75e792f1df8035488e62484"
+  },
+  "camper-van": {
+    "src": "/vehicles/camper-van.svg",
+    "width": 360,
+    "height": 240,
+    "title": "캠핑카 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "ced4a1dbcb19cffe620dac1ac9e04506745fda0a789d5ec5074e4b76077dd6a0"
+  },
+  "excavator": {
+    "src": "/vehicles/excavator.svg",
+    "width": 360,
+    "height": 240,
+    "title": "굴착기 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "5755d1d58721f0b96871785e0ba4dfd6303047d468fd53b60dcff6531338ceb5"
+  },
+  "bulldozer": {
+    "src": "/vehicles/bulldozer.svg",
+    "width": 360,
+    "height": 240,
+    "title": "불도저 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "cb02b6c72e0d8601de37c9dfc87343523ac7a256a56f43a5046690b0d7a1995e"
+  },
+  "dump-truck": {
+    "src": "/vehicles/dump-truck.svg",
+    "width": 360,
+    "height": 240,
+    "title": "덤프트럭 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "8e0c5819adce60161f0fecf68cc8301c73c562f94a5f88d1801aadf7657a0663"
+  },
+  "concrete-mixer": {
+    "src": "/vehicles/concrete-mixer.svg",
+    "width": 360,
+    "height": 240,
+    "title": "레미콘 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "0ae81502aa713b6d55ffda322c57bf6528492be310e7e0f2f859e3463833fd97"
+  },
+  "crane-truck": {
+    "src": "/vehicles/crane-truck.svg",
+    "width": 360,
+    "height": 240,
+    "title": "크레인차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "97476e7e670241c7bc1469d919bdd6fcaf447c6618a941bc603319bd492c929b"
+  },
+  "road-roller": {
+    "src": "/vehicles/road-roller.svg",
+    "width": 360,
+    "height": 240,
+    "title": "로드롤러 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "4b40e231828461d53652470f6f0283b4beb94155bf3a3407e03654cb8a850d38"
+  },
+  "wheel-loader": {
+    "src": "/vehicles/wheel-loader.svg",
+    "width": 360,
+    "height": 240,
+    "title": "휠로더 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "178fc9a17a4e5bead1ef32e47b2ae875ffb58119e55a7e1173f8ee6dd5436cfb"
+  },
+  "forklift": {
+    "src": "/vehicles/forklift.svg",
+    "width": 360,
+    "height": 240,
+    "title": "지게차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "a03d070ff97dc4cb349e72402aa4197e38d7a719643d59d0d6366d78f02f99ad"
+  },
+  "backhoe-loader": {
+    "src": "/vehicles/backhoe-loader.svg",
+    "width": 360,
+    "height": 240,
+    "title": "백호로더 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "e4aafbae69d406f4ed90f41371eb8deff6f618e1b1aec354931ae03e1a0ee077"
+  },
+  "asphalt-paver": {
+    "src": "/vehicles/asphalt-paver.svg",
+    "width": 360,
+    "height": 240,
+    "title": "아스팔트 피니셔 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "c338e0ea9e64d7c5dda5db17c175bbce261d09fcc4edd82bfad3a93e4a99478d"
+  },
+  "fire-engine": {
+    "src": "/vehicles/fire-engine.svg",
+    "width": 360,
+    "height": 240,
+    "title": "소방차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "485316cff752d9285b0bd259a8ff4d47b27fd5864381bb1c98e6ba061a1fd17b"
+  },
+  "ambulance": {
+    "src": "/vehicles/ambulance.svg",
+    "width": 360,
+    "height": 240,
+    "title": "구급차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "6cc620a7a1b1afb4ae638bab53e8484901e21ce67797878d28db96d51d63eb3f"
+  },
+  "police-car": {
+    "src": "/vehicles/police-car.svg",
+    "width": 360,
+    "height": 240,
+    "title": "경찰차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "f1828d46ebd56ba40494f0ce58b19adb21fab0da63b5377235ed5f3ab7de2f40"
+  },
+  "garbage-truck": {
+    "src": "/vehicles/garbage-truck.svg",
+    "width": 360,
+    "height": 240,
+    "title": "청소차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "2647279b3408a998468c833dac06344587bd51fa3b4bccc80d9a3781adcb5d9f"
+  },
+  "tow-truck": {
+    "src": "/vehicles/tow-truck.svg",
+    "width": 360,
+    "height": 240,
+    "title": "견인차 일러스트",
+    "author": "오늘의 작은 동화 프로젝트",
+    "changes": "프로젝트에서 직접 작성한 SVG 일러스트. 외부 이미지·브랜드 캐릭터 미사용.",
+    "sha256": "aa45bd144e3ec62973045866e7476af967d73dc336f3a7cb9978deab701a1939"
+  }
+}

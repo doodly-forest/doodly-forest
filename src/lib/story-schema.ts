@@ -3,7 +3,7 @@ import { characterById } from "./story-options";
 import { STORY_LIMITS } from "./story-config";
 import { narrationText } from "./story-text";
 export const selectionSchema = z.object({
-  world: z.literal("dinosaur"),
+  world: z.enum(["dinosaur", "vehicle"]),
   characterIds: z.array(z.string()).min(1).max(2),
   theme: z.enum(["family", "friendship", "kindness", "courage", "habits"]),
   targetSeconds: z.union([z.literal(60), z.literal(120)]),
