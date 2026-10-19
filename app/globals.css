@@ -31,6 +31,9 @@ legend { display: flex; align-items: center; margin-bottom: 1rem; font-size: 1.1
 .button.primary:not(:disabled):hover { background: #294d36; }
 .story-body { font-size: 1.125rem; line-height: 2; overflow-wrap: anywhere; }
 .story-body p + p { margin-top: 1.4rem; }
+.story-body .story-paragraph + .story-paragraph { margin-top: 1.4rem; }
+.story-body .story-paragraph p + p { margin-top: .35rem; }
+.story-translation { font-size: .875rem; line-height: 1.7; color: #7a847c; word-break: keep-all; overflow-wrap: anywhere; }
 .error { background: #fff4ee; border: 1px solid #e9c7b1; border-radius: .8rem; padding: 1rem; color: #813d21; overflow-wrap: anywhere; }
 .character-dialog { width: min(46rem, calc(100% - 1.5rem)); max-width: none; height: 90dvh; max-height: 90dvh; margin: auto; padding: 0; border: 1px solid #d6ddd2; border-radius: 1.25rem; background: #fffef9; color: var(--foreground); overflow: hidden; box-shadow: 0 24px 80px #16302240; }
 .character-dialog::backdrop { background: #12251bbb; }

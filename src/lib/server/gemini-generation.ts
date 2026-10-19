@@ -3,12 +3,12 @@ import { HarmBlockThreshold, HarmCategory, ThinkingLevel, type GenerateContentRe
 import { z } from "zod";
 import { TIMEOUTS } from "../story-config";
 import { withDeadline } from "../deadline";
-import type { Selection } from "../story-options";
+import type { Language, Selection } from "../story-options";
 import { ApiFailure, type ErrorCode } from "./api-errors";
 import { gemini } from "./gemini-client";
 import { modelSetting } from "./provider-config";
 import { geminiPcmToWav } from "./pcm-audio";
-import { STORY_INSTRUCTIONS, STORY_JSON_SCHEMA, storyInput } from "./story-prompt";
+import { storyInput, storyInstructions, storyJsonSchema } from "./story-prompt";
 
 const safetySettings = [
   HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -43,9 +43,9 @@ export async function generateGeminiStory(selection: Selection, signal: AbortSig
     model: modelSetting("GEMINI_TEXT_MODEL", "gemini-3.1-flash-lite"),
     contents: [{ role: "user", parts: [{ text: storyInput(selection) }] }],
     config: {
-      systemInstruction: STORY_INSTRUCTIONS,
+      systemInstruction: storyInstructions(selection.language),
       responseMimeType: "application/json",
-      responseJsonSchema: STORY_JSON_SCHEMA,
+      responseJsonSchema: storyJsonSchema(selection.language),
       maxOutputTokens: 4000,
       thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
       safetySettings,
@@ -88,13 +88,18 @@ export async function checkGeminiContent(text: string, signal: AbortSignal) {
   if (!verdict.data.safe) throw new ApiFailure("CONTENT_BLOCKED");
 }
 
-export async function generateGeminiSpeech(text: string, signal: AbortSignal) {
+const SPEECH_STYLES: Record<Language, string> = {
+  ko: "따뜻하고 차분한 한국어 동화 낭독. 과장이나 소리 지르기 없이 편안한 속도와 안정된 음량으로, 문장 사이를 자연스럽게 쉬며 읽는다.",
+  en: "A warm, calm English bedtime-story reading for young children. Clear and gentle, at a relaxed pace and steady volume, with natural pauses between sentences. No exaggeration or shouting.",
+};
+
+export async function generateGeminiSpeech(text: string, language: Language, signal: AbortSignal) {
   const client = gemini();
   const result = await withDeadline(signal, TIMEOUTS.speech, (stageSignal) => client.models.generateContent({
     model: modelSetting("GEMINI_TTS_MODEL", "gemini-3.8-flash-lite-tts"),
     contents: [{ role: "user", parts: [{
       text,
-      speechMetadata: { style: "따뜻하고 차분한 한국어 동화 낭독. 과장이나 소리 지르기 없이 편안한 속도와 안정된 음량으로, 문장 사이를 자연스럽게 쉬며 읽는다." },
+      speechMetadata: { style: SPEECH_STYLES[language] },
     }] }],
     config: {
       responseModalities: ["AUDIO"],

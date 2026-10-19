@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { charactersForWorld, worlds, themes, characterById, type Selection } from "@/src/lib/story-options";
+import { charactersForWorld, worlds, themes, languages, characterById, type Selection } from "@/src/lib/story-options";
 import { CharacterPicker } from "./character-picker";
 type Props = {
   selection: Selection; busy: boolean;
@@ -78,6 +78,19 @@ export function StoryForm({ selection, busy, onSelection, onGenerate, onReset }:
           ))}
         </div>
         <p className="helper mt-3">목표 길이예요. 실제 읽는 시간은 조금 달라질 수 있어요.</p>
+      </fieldset>
+      <fieldset disabled={busy}>
+        <legend><span className="step">4</span>어떤 말로 들을까요?</legend>
+        <div className="grid grid-cols-2 gap-3">
+          {languages.map((language) => (
+            <label className="choice" key={language.id}>
+              <input type="radio" name="language" checked={selection.language === language.id}
+                onChange={() => onSelection({ ...selection, language: language.id })} />
+              <span><strong lang={language.id}>{language.name}</strong><small>{language.description}</small></span>
+            </label>
+          ))}
+        </div>
+        <p className="helper mt-3">영어 동화에는 문단마다 한국어 해설이 함께 나오고, 영어나 한국어로 골라 들을 수 있어요.</p>
       </fieldset>
       <div className="flex flex-wrap gap-3 border-t border-stone-200 pt-6">
         <button className="button primary grow sm:grow-0" disabled={busy || !selection.characterIds.length} type="submit">동화 만들기</button>

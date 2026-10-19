@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { storyFixture, content, vehicleContent, vehicleSelection } from "../src/tests/fixtures";
+import { storyFixture, content, englishContent, englishSelection, englishTranslation, vehicleContent, vehicleSelection } from "../src/tests/fixtures";
 import { silentMp3, silentWav } from "./audio-fixture";
 import { characters } from "../src/lib/story-options";
 import { characterImages } from "../src/lib/character-images";
@@ -165,6 +165,45 @@ test("vehicle selection, alias search, fixed picker height, draft cancellation a
   await expect(page.getByRole("radio", { name: "약 2분", exact: true })).toBeChecked();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(apiCalls).toBe(0);
+});
+
+test("English story shows a Korean explanation and is narrated in the chosen language", async ({ page }) => {
+  const count = { story: 0, speech: 0 };
+  const spoken: unknown[] = [];
+  await page.route("**/api/story", async (route) => {
+    count.story += 1;
+    expect(route.request().postDataJSON()).toEqual(englishSelection);
+    await route.fulfill({ json: storyFixture(englishSelection) });
+  });
+  await page.route("**/api/speech", async (route) => {
+    count.speech += 1;
+    spoken.push(route.request().postDataJSON());
+    await route.fulfill({ contentType: "audio/wav", body: silentWav() });
+  });
+  await page.goto("/");
+  await chooseFriends(page);
+  await page.getByRole("radio", { name: /약 1분/ }).check();
+  await page.getByRole("radio", { name: /English/ }).check();
+  await page.getByRole("button", { name: "동화 만들기", exact: true }).click();
+  await expect(page.getByRole("heading", { name: englishContent.title })).toBeVisible();
+  await expect(page.getByRole("article")).toContainText("목표 길이 약 1분 · English");
+  await expect(page.getByText("주인공: Stego / 함께할 친구: Mosa")).toBeVisible();
+  await expect(page.getByRole("heading", { name: englishContent.title }).locator("xpath=..")).toHaveAttribute("lang", "en");
+  await expect(page.getByText(englishTranslation.title, { exact: true })).toHaveAttribute("lang", "ko");
+  for (const paragraph of englishTranslation.paragraphs) await expect(page.getByText(paragraph, { exact: true })).toHaveClass("story-translation");
+  await expect(page.getByRole("radio", { name: "English" }).last()).toBeChecked();
+  await page.getByRole("button", { name: "읽어주기", exact: true }).click();
+  await expect(page.getByText(/실제 길이 00:02/)).toBeVisible();
+  expect(spoken).toEqual([{ text: [englishContent.title, ...englishContent.paragraphs].join("\n\n"), language: "en" }]);
+  // Switching the narration language drops the prepared English audio.
+  await page.getByRole("radio", { name: "한국어 해설" }).check();
+  await expect(page.getByLabel("동화 음성 플레이어")).toBeHidden();
+  await page.getByRole("button", { name: "읽어주기", exact: true }).click();
+  await expect(page.getByText(/실제 길이 00:02/)).toBeVisible();
+  expect(spoken[1]).toEqual({ text: [englishTranslation.title, ...englishTranslation.paragraphs].join("\n\n"), language: "ko" });
+  expect(count).toEqual({ story: 1, speech: 2 });
+  await page.getByRole("button", { name: "선택 바꾸기" }).click();
+  await expect(page.getByRole("radio", { name: /English/ })).toBeChecked();
 });
 
 test("vehicle story and narration use the selected vehicle world without automatic speech", async ({ page }) => {

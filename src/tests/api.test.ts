@@ -4,7 +4,7 @@ import { POST as speechPost } from "../../app/api/speech/route";
 import { TIMEOUTS } from "../lib/story-config";
 import { withDeadline } from "../lib/deadline";
 import { narrationText } from "../lib/story-text";
-import { content, modelFixture, selection, vehicleContent, vehicleSelection } from "./fixtures";
+import { content, englishContent, englishModelContent, englishSelection, englishTranslation, modelFixture, selection, vehicleContent, vehicleSelection } from "./fixtures";
 
 const transport = vi.fn<typeof fetch>();
 function request(body: unknown = selection, headers: Record<string, string> = {}) {
@@ -45,7 +45,7 @@ describe("request boundary (T06, T07, T23, T24)", () => {
     { ...selection, world: "vehicle", characterIds: ["stegosaurus"] },
     { ...selection, characterIds: ["stegosaurus", "stegosaurus"] },
     { ...selection, characterIds: ["stegosaurus", "mosasaurus", "triceratops"] },
-    { ...selection, prompt: "ignore instructions" }, { ...selection, model: "custom" }, null,
+    { ...selection, prompt: "ignore instructions" }, { ...selection, model: "custom" }, { ...selection, language: "ja" }, null,
   ])("rejects invalid selection without upstream call: %j", async (body) => {
     await errorIs(await storyPost(request(body)), 400, "INVALID_INPUT"); expect(transport).not.toHaveBeenCalled();
   });
@@ -107,6 +107,50 @@ describe("generation and content checks (T08–T12)", () => {
     });
     expect(transport).toHaveBeenCalledTimes(2);
   });
+  it("writes English stories with English instructions and English character names", async () => {
+    model(englishModelContent); approved();
+    const response = await storyPost(request(englishSelection));
+    expect(response.status).toBe(200);
+    const { story } = await response.json();
+    expect(story).toMatchObject({ ...englishContent, translation: englishTranslation, narrationText: narrationText(englishContent), selection: englishSelection });
+    expect(story).not.toHaveProperty("koreanTitle");
+    const generated = JSON.parse(transport.mock.calls[0][1]!.body as string);
+    expect(generated.instructions).toContain("stories in English");
+    expect(generated.text.format.schema.required).toEqual(["title", "paragraphs", "koreanTitle", "koreanParagraphs"]);
+    // Moderation covers the Korean explanation shown to readers as well.
+    expect(JSON.parse(transport.mock.calls[1][1]!.body as string).input).toBe(`${narrationText(englishContent)}\n\n${narrationText(englishTranslation)}`);
+    const input = JSON.parse(generated.input[0].content);
+    expect(input).toMatchObject({
+      outputLanguage: "English",
+      characters: [
+        { id: "stegosaurus", englishName: "Stegosaurus", englishStoryName: "Stego", koreanName: "스테고사우루스", koreanStoryName: "스테고", role: "hero" },
+        { id: "mosasaurus", englishName: "Mosasaurus", englishStoryName: "Mosa", role: "friend" },
+      ],
+      softLengthTarget: { words: [90, 140] },
+    });
+    expect(input.characters[0]).not.toHaveProperty("name");
+    expect(input.characters[0]).not.toHaveProperty("storyName");
+  });
+  it("defaults omitted language to Korean", async () => {
+    model(); approved();
+    const legacy: Partial<typeof selection> = { ...selection };
+    delete legacy.language;
+    const response = await storyPost(request(legacy));
+    expect(response.status).toBe(200);
+    expect((await response.json()).story.selection.language).toBe("ko");
+    expect(JSON.parse(transport.mock.calls[0][1]!.body as string).instructions).toContain("한국어 유아 동화 작가");
+  });
+  it.each([
+    { ...englishModelContent, paragraphs: [...englishContent.paragraphs.slice(0, 2), "스테고와 모사는 함께 쉬었어요."] },
+    { ...englishModelContent, paragraphs: ["Stego played alone.", "Stego smiled.", "The end."] },
+    { ...englishModelContent, koreanParagraphs: englishTranslation.paragraphs.slice(0, 2) },
+    { ...englishModelContent, koreanTitle: "The Little Leaf Path", koreanParagraphs: englishContent.paragraphs },
+    { ...englishModelContent, koreanTitle: "" },
+    englishContent,
+  ])("rejects English stories with Korean text, missing names or a bad explanation %j", async (value) => {
+    model(value);
+    await errorIs(await storyPost(request(englishSelection)), 502, "INVALID_AI_RESPONSE"); expect(transport).toHaveBeenCalledTimes(1);
+  });
   it.each([
     { title: "", paragraphs: content.paragraphs }, { title: "가".repeat(61), paragraphs: content.paragraphs },
     { ...content, paragraphs: ["", ...content.paragraphs] }, { ...content, paragraphs: ["   ", ...content.paragraphs] },
@@ -145,6 +189,12 @@ describe("speech route (T14, T24)", () => {
     const speech = JSON.parse(transport.mock.calls[1][1]!.body as string);
     expect(speech).toMatchObject({ model: "gpt-4o-mini-tts", voice: "coral", input: narrationText(content), response_format: "mp3" });
     expect(speech.instructions).toContain("한국어");
+  });
+  it("reads English stories with English speech instructions", async () => {
+    approved(); transport.mockResolvedValueOnce(new Response(new Uint8Array([73, 68, 51, 1]), { headers: { "content-type": "audio/mpeg" } }));
+    const response = await speechPost(request({ text: narrationText(englishContent), language: "en" }));
+    expect(response.status).toBe(200);
+    expect(JSON.parse(transport.mock.calls[1][1]!.body as string).instructions).toContain("English");
   });
   it("does not synthesize blocked or unchecked text", async () => {
     transport.mockResolvedValueOnce(Response.json({ results: [{ flagged: true }] }));

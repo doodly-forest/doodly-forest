@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { characterById, themes, worlds } from "@/src/lib/story-options";
+import { characterById, languages, storyNames, themes, worlds } from "@/src/lib/story-options";
 import { formatDuration } from "@/src/lib/story-text";
 import type { ApiError } from "@/src/lib/story-schema";
 import { useStorySession } from "./story-session";
@@ -51,12 +51,31 @@ export function StoryReader() {
         </div>}
         {story && (
           <article>
-            <p className="helper">{worlds.find((w) => w.id === story.selection.world)?.name} · {themes.find((t) => t.id === story.selection.theme)?.name} · 목표 길이 약 {story.selection.targetSeconds / 60}분</p>
-            <p className="helper mt-1">{story.selection.characterIds.map((id, index) => `${index === 0 ? "주인공" : "함께할 친구"}: ${characterById(id)?.storyName}`).join(" / ")}</p>
-            <h2 className="mt-5 break-words text-2xl font-bold leading-relaxed">{story.title}</h2>
-            <div className="story-body mt-6">{story.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+            <p className="helper">{worlds.find((w) => w.id === story.selection.world)?.name} · {themes.find((t) => t.id === story.selection.theme)?.name} · 목표 길이 약 {story.selection.targetSeconds / 60}분 · {languages.find((l) => l.id === story.selection.language)?.name}</p>
+            <p className="helper mt-1">{story.selection.characterIds.map((id, index) => {
+              const character = characterById(id);
+              return `${index === 0 ? "주인공" : "함께할 친구"}: ${character && storyNames(character, story.selection.language).storyName}`;
+            }).join(" / ")}</p>
+            <div lang={story.selection.language}>
+              <h2 className="mt-5 break-words text-2xl font-bold leading-relaxed">{story.title}</h2>
+              {story.translation && <p className="story-translation mt-1" lang="ko">{story.translation.title}</p>}
+              <div className="story-body mt-6">{story.paragraphs.map((paragraph, index) => <div key={index} className="story-paragraph">
+                <p>{paragraph}</p>
+                {story.translation && <p className="story-translation" lang="ko">{story.translation.paragraphs[index]}</p>}
+              </div>)}</div>
+            </div>
             <div className="mt-8 space-y-4 border-t border-stone-200 pt-6">
               <p className="helper">AI가 만든 목소리로 읽어드려요. 보호자가 본문을 먼저 확인해주세요.</p>
+              {story.translation && <fieldset disabled={state.busy}>
+                <legend className="font-semibold">어떤 말로 읽어줄까요?</legend>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  {languages.map((language) => <label className="choice" key={language.id}>
+                    <input type="radio" name="speech-language" checked={state.speechLanguage === language.id}
+                      onChange={() => state.chooseSpeechLanguage(language.id)} />
+                    <strong lang={language.id}>{language.id === "en" ? "English" : "한국어 해설"}</strong>
+                  </label>)}
+                </div>
+              </fieldset>}
               <div aria-live="polite" role="status">{state.speechStatus === "loading" && "음성을 준비하고 있어요."}</div>
               {state.speechError && <ErrorNotice error={state.speechError} />}
               {(state.speechStatus === "idle" || state.speechStatus === "loading" || (state.speechStatus === "error" && state.speechError?.retryable)) &&

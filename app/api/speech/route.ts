@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   return handleRequest(request, TIMEOUTS.speechServer, async (context) => {
     const parsed = speechSchema.safeParse(await readJson(request, context.signal));
     if (!parsed.success) throw new ApiFailure("INVALID_INPUT");
-    const audio = await generateSpeech(parsed.data.text, context.signal, (stage) => { context.stage = stage; });
+    const audio = await generateSpeech(parsed.data.text, parsed.data.language, context.signal, (stage) => { context.stage = stage; });
     return new Response(audio.bytes, { headers: { "Content-Type": audio.contentType } });
   });
 }

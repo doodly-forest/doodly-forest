@@ -19,7 +19,7 @@ export function CharacterPicker({ world, selectedIds, onConfirm, onDismiss, mode
   const normalize = (value: string) => value.trim().normalize("NFKC").toLowerCase().replace(/[\s-]+/g, "");
   const query = normalize(search);
   const visible = characters.filter((character) => (category === "all" || character.category === category) &&
-    [character.name, character.storyName, character.id, ...(characterSearchAliases[character.id] ?? [])].some((name) => normalize(name).includes(query)));
+    [character.name, character.storyName, character.englishName, character.id, ...(characterSearchAliases[character.id] ?? [])].some((name) => normalize(name).includes(query)));
 
   useEffect(() => {
     const element = dialog.current;

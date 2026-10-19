@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { defaultSelection, type Selection } from "@/src/lib/story-options";
+import { defaultSelection, type Language, type Selection } from "@/src/lib/story-options";
 import { storyResponseSchema, type Story, type ApiError } from "@/src/lib/story-schema";
 import { TIMEOUTS } from "@/src/lib/story-config";
+import { narrationText } from "@/src/lib/story-text";
 import { hasErrorName, withDeadline } from "@/src/lib/deadline";
 import { ClientFailure, clientError, postJson } from "@/src/lib/client-api";
 
@@ -18,6 +19,8 @@ export function useStoryPlayground() {
   const [duration, setDuration] = useState<number | null>(null);
   const [playbackNote, setPlaybackNote] = useState("");
   const [playing, setPlaying] = useState(false);
+  // English stories can be read aloud in English or as their Korean explanation.
+  const [speechLanguage, setSpeechLanguage] = useState<Language>("en");
   const player = useRef<HTMLAudioElement | null>(null);
   const mediaUrl = useRef<string | null>(null);
   const request = useRef<AbortController | null>(null);
@@ -45,13 +48,23 @@ export function useStoryPlayground() {
   }, []);
   useEffect(() => () => { cancelRequest(); disposeMedia(); }, [cancelRequest, disposeMedia]);
 
-  const clearResults = useCallback(() => {
-    cancelRequest();
+  const clearSpeech = useCallback(() => {
     disposeMedia();
-    setStory(null); setStoryStatus("idle"); setStoryError(null);
     setSpeechStatus("idle"); setSpeechError(null); setAudioUrl(null);
     setDuration(null); setPlaybackNote(""); setPlaying(false);
-  }, [cancelRequest, disposeMedia]);
+  }, [disposeMedia]);
+  const clearResults = useCallback(() => {
+    cancelRequest();
+    clearSpeech();
+    setStory(null); setStoryStatus("idle"); setStoryError(null);
+    setSpeechLanguage("en");
+  }, [cancelRequest, clearSpeech]);
+  function chooseSpeechLanguage(next: Language) {
+    if (locked.current || next === speechLanguage) return;
+    // Prepared audio belongs to the previous language; never reuse it.
+    clearSpeech();
+    setSpeechLanguage(next);
+  }
   function updateSelection(next: Selection) {
     if (locked.current || JSON.stringify(next) === JSON.stringify(selection)) return;
     clearResults();
@@ -110,7 +123,9 @@ export function useStoryPlayground() {
     setSpeechStatus("loading"); setSpeechError(null);
     try {
       const blob = await withDeadline(controller.signal, TIMEOUTS.speechClient, async (signal) => {
-        const response = await postJson("/api/speech", { text: story.narrationText }, signal);
+        const translation = speechLanguage === "ko" ? story.translation : undefined;
+        const body = translation ? { text: narrationText(translation), language: "ko" } : { text: story.narrationText, language: story.selection.language };
+        const response = await postJson("/api/speech", body, signal);
         const contentType = response.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
         if (contentType !== "audio/mpeg" && contentType !== "audio/wav") throw new ClientFailure({ code: "INVALID_AUDIO_RESPONSE", message: "올바른 음성을 받지 못했어요. 음성을 다시 준비해주세요.", retryable: true });
         const value = await response.blob();
@@ -144,9 +159,9 @@ export function useStoryPlayground() {
   function replay() { if (mediaUrl.current) void play(version.current, mediaUrl.current, true); }
   return {
     selection, story, storyStatus, speechStatus, storyError, speechError,
-    audioUrl, duration, playing, playbackNote, audioRef,
+    audioUrl, duration, playing, playbackNote, audioRef, speechLanguage,
     busy: storyStatus === "loading" || speechStatus === "loading",
-    updateSelection, reset, clearResults, generate, prepareSpeech, replay,
+    updateSelection, reset, clearResults, generate, prepareSpeech, replay, chooseSpeechLanguage,
     readDuration, playbackEvent, playbackError,
   };
 }
